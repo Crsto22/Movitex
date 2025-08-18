@@ -23,9 +23,9 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 rounded-b-full  ${
       isScrolled 
-        ? 'bg-white shadow-md' 
+        ? 'bg-white shadow-xl' 
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,16 +44,18 @@ const Navbar = () => {
 
           {/* Menú desktop */}
           <div className="hidden md:flex items-center space-x-8">
-            <a 
-              href="#inicio" 
-              className="font-medium px-3 py-2 text-[#f0251f] hover:text-[#fab926]  rounded-md transition-colors duration-200"
-            >
-              Inicio
-            </a>
+                         <a 
+               href="#inicio" 
+               className=" px-3 py-2 text-[#f0251f] hover:text-black rounded-md font-bold transition-colors duration-200"
+               style={{ fontFamily: 'MusticaPro, sans-serif' }}
+             >
+               Inicio
+             </a>
             
                          <div className="relative group">
                <button 
-                 className="font-medium px-3 py-2 rounded-md transition-colors duration-200 flex items-center text-[#fab926] hover:text-[#f0251f]"
+                 className="px-3 py-2 rounded-md transition-colors cursor-pointer font-bold duration-200 flex items-center text-[#f0251f] hover:text-black "
+                 style={{ fontFamily: 'MusticaPro, sans-serif' }}
                >
                  Servicios
                  <span className="ml-1 text-sm">▾</span>
@@ -61,10 +63,10 @@ const Navbar = () => {
                {/* Dropdown opcional para servicios */}
                <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                  <div className="py-1">
-                   <a href="#servicio1" className="block px-4 py-2 text-sm text-[#fab926] hover:text-[#f0251f] transition-colors duration-200">
+                   <a href="#servicio1" className="block px-4 py-2 text-sm text-[#f0251f] transition-colors duration-200">
                      Servicio 1
                    </a>
-                   <a href="#servicio2" className="block px-4 py-2 text-sm text-[#fab926] hover:text-[#f0251f] transition-colors duration-200">
+                   <a href="#servicio2" className="block px-4 py-2 text-sm text-[#f0251f]  transition-colors duration-200">
                      Servicio 2
                    </a>
                  </div>
@@ -73,7 +75,8 @@ const Navbar = () => {
 
                          <a 
                href="#contacto" 
-               className="font-medium px-3 py-2 rounded-md transition-colors duration-200 text-[#fab926] hover:text-[#f0251f]"
+               className="px-3 py-2 font-bold rounded-md transition-colors duration-200 text-[#f0251f] hover:text-black "
+               style={{ fontFamily: 'MusticaPro, sans-serif' }}
              >
                Contacto
              </a>
@@ -83,8 +86,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* Icono circular con SVG */}
             <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"
-              style={{ backgroundColor: '#fab926' }}
+              className="w-10 h-10 bg-[#f0251f] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"    
             >
              <img src={Movitex} alt="Movitex" className="w-6 h-6" />
             </div>
@@ -125,6 +127,7 @@ const Navbar = () => {
                <a 
                  href="#servicios" 
                  className="block px-3 py-2 rounded-md font-medium text-[#fab926] hover:text-[#f0251f] transition-colors duration-200"
+                 style={{ fontFamily: 'MusticaPro, sans-serif' }}
                >
                  Servicios ▾
                </a>
@@ -132,6 +135,7 @@ const Navbar = () => {
                <a 
                  href="#contacto" 
                  className="block px-3 py-2 rounded-md font-medium text-[#fab926] hover:text-[#f0251f] transition-colors duration-200"
+                 style={{ fontFamily: 'MusticaPro, sans-serif' }}
                >
                  Contacto
                </a>

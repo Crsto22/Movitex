@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Inicio from './pages/inicio'
+import Inicio from './pages/Inicio'
 
 function App() {
   
