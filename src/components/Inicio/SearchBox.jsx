@@ -96,15 +96,12 @@ const SearchBox = () => {
     alert(`Buscando viajes de ${searchData.origen} a ${searchData.destino} para el ${formatDate(searchData.salida)}${searchData.retorno ? ' con retorno el ' + formatDate(searchData.retorno) : ''}`);
   };
 
-  // Formatear fecha para mostrar
+  // Formatear fecha para mostrar sin problemas de zona horaria
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    // Parsear directamente el string sin crear objeto Date problemático
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   // Funciones para el calendario dinámico
@@ -149,9 +146,9 @@ const SearchBox = () => {
     
     // Si es para retorno y ya hay fecha de salida, empezar desde ese mes
     if (type === 'retorno' && searchData.salida) {
-      const salidaDate = new Date(searchData.salida);
-      setCurrentMonth(salidaDate.getMonth());
-      setCurrentYear(salidaDate.getFullYear());
+      const [salidaYear, salidaMonth] = searchData.salida.split('-').map(Number);
+      setCurrentMonth(salidaMonth - 1); // Restar 1 porque los meses en JS van de 0-11
+      setCurrentYear(salidaYear);
     }
   };
 
@@ -187,8 +184,11 @@ const SearchBox = () => {
   };
 
   const selectDate = (day) => {
-    const selectedDate = new Date(currentYear, currentMonth, day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    // Crear fecha local sin problemas de zona horaria
+    const year = currentYear;
+    const month = (currentMonth + 1).toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    const dateString = `${year}-${month}-${dayStr}`;
     
     setSearchData(prev => ({
       ...prev,
@@ -208,7 +208,9 @@ const SearchBox = () => {
     
     // Si es retorno, deshabilitar fechas anteriores a la salida
     if (calendarType === 'retorno' && searchData.salida) {
-      const salidaDate = new Date(searchData.salida);
+      // Crear fecha de salida desde el string sin problemas de zona horaria
+      const [salidaYear, salidaMonth, salidaDay] = searchData.salida.split('-').map(Number);
+      const salidaDate = new Date(salidaYear, salidaMonth - 1, salidaDay);
       return selectedDate < salidaDate;
     }
     
@@ -216,8 +218,11 @@ const SearchBox = () => {
   };
 
   const isDateSelected = (day) => {
-    const selectedDate = new Date(currentYear, currentMonth, day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    // Crear string de fecha local consistente con selectDate
+    const year = currentYear;
+    const month = (currentMonth + 1).toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    const dateString = `${year}-${month}-${dayStr}`;
     return searchData[calendarType] === dateString;
   };
 
