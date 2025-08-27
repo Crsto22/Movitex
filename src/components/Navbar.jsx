@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
-import Movitex from "../../public/Movitex.svg"
+import Movitex from "../../public/Movitex.svg";
+import LoginModal from './LoginModal';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const openLoginModal = () => {
+    setIsLoginModalOpen(true);
+  };
+
+  const closeLoginModal = () => {
+    setIsLoginModalOpen(false);
   };
 
   useEffect(() => {
@@ -28,7 +39,7 @@ const Navbar = () => {
         ? 'bg-white shadow-xl' 
         : 'bg-transparent'
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-36">
         <div className="flex justify-between items-center h-16">
           {/* Logo y texto */}
           <div className="flex items-center space-x-3">
@@ -44,13 +55,13 @@ const Navbar = () => {
 
           {/* Menú desktop */}
           <div className="hidden md:flex items-center space-x-8">
-                         <a 
-               href="#inicio" 
-               className=" px-3 py-2 text-[#f0251f] hover:text-black rounded-md font-bold transition-colors duration-200"
-               style={{ fontFamily: 'MusticaPro, sans-serif' }}
-             >
-               Inicio
-             </a>
+                                     <Link 
+              to="/inicio" 
+              className=" px-3 py-2 text-[#f0251f] hover:text-black rounded-md font-bold transition-colors duration-200"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Inicio
+            </Link>
             
                          <div className="relative group">
                <button 
@@ -63,30 +74,34 @@ const Navbar = () => {
                {/* Dropdown opcional para servicios */}
                <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                  <div className="py-1">
-                   <a href="#servicio1" className="block px-4 py-2 text-sm text-[#f0251f] transition-colors duration-200">
-                     Servicio 1
-                   </a>
-                   <a href="#servicio2" className="block px-4 py-2 text-sm text-[#f0251f]  transition-colors duration-200">
-                     Servicio 2
-                   </a>
+                   <Link to="/MovitexOne" style={{ fontFamily: 'MusticaPro, sans-serif' }} className="block px-4 py-2 text-sm text-[#f0251f] hover:bg-gray-50 transition-colors duration-200">
+                     Movitex <span style={{ fontFamily: 'MusticaPro, sans-serif' }} className="text-[#fab926]">One</span>
+                   </Link>
+                   <Link to="/MovitexPro" style={{ fontFamily: 'MusticaPro, sans-serif' }} className="block px-4 py-2 text-sm text-[#f0251f] hover:bg-gray-50 transition-colors duration-200">
+                     Movitex <span style={{ fontFamily: 'MusticaPro, sans-serif' }} className="text-[#fab926]">Pro</span>
+                   </Link>
+                   <Link to="/MovitexUltra" style={{ fontFamily: 'MusticaPro, sans-serif' }} className="block px-4 py-2 text-sm text-[#f0251f] hover:bg-gray-50 transition-colors duration-200">
+                     Movitex <span style={{ fontFamily: 'MusticaPro, sans-serif' }} className="text-black">Ultra</span>
+                   </Link>
                  </div>
                </div>
              </div>
 
-                         <a 
-               href="#contacto" 
+                         <Link 
+               to="/contactos" 
                className="px-3 py-2 font-bold rounded-md transition-colors duration-200 text-[#f0251f] hover:text-black "
                style={{ fontFamily: 'MusticaPro, sans-serif' }}
              >
-               Contacto
-             </a>
+               Contactos
+             </Link>
           </div>
 
           {/* Icono circular y botón hamburguesa */}
           <div className="flex items-center space-x-4">
-            {/* Icono circular con SVG */}
+            {/* Icono circular con SVG - Click para abrir modal de login */}
             <div 
-              className="w-10 h-10 bg-[#f0251f] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"    
+              onClick={openLoginModal}
+              className="w-10 h-10 bg-[#fab926] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200"    
             >
              <img src={Movitex} alt="Movitex" className="w-6 h-6" />
             </div>
@@ -117,32 +132,55 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-                             <a 
-                 href="#inicio" 
-                 className="block px-3 py-2 rounded-md font-medium text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
-               >
-                 Inicio
-               </a>
+                                           <Link 
+                to="/inicio" 
+                className="block px-3 py-2 rounded-md font-medium text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
+                style={{ fontFamily: 'MusticaPro, sans-serif' }}
+             >
+                Inicio
+              </Link>
                
-               <a 
-                 href="#servicios" 
-                 className="block px-3 py-2 rounded-md font-medium text-[#fab926] hover:text-[#f0251f] transition-colors duration-200"
-                 style={{ fontFamily: 'MusticaPro, sans-serif' }}
-               >
-                 Servicios ▾
-               </a>
+               <div className="block px-3 py-2">
+                 <p className="font-medium text-[#fab926] mb-2" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                   Servicios ▾
+                 </p>
+                 <Link 
+                   to="/MovitexOne" 
+                   className="block pl-4 py-1 text-sm text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
+                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                 >
+                   Movitex One
+                 </Link>
+                 <Link 
+                   to="/MovitexPro" 
+                   className="block pl-4 py-1 text-sm text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
+                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                 >
+                   Movitex Pro
+                 </Link>
+                 <Link 
+                   to="/MovitexUltra" 
+                   className="block pl-4 py-1 text-sm text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
+                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                 >
+                   Movitex Ultra
+                 </Link>
+               </div>
 
-               <a 
-                 href="#contacto" 
+               <Link 
+                 to="/contactos" 
                  className="block px-3 py-2 rounded-md font-medium text-[#fab926] hover:text-[#f0251f] transition-colors duration-200"
                  style={{ fontFamily: 'MusticaPro, sans-serif' }}
-               >
-                 Contacto
-               </a>
+                  >
+                 Contactos
+               </Link>
             </div>
           </div>
         )}
       </div>
+      
+      {/* Modal de inicio de sesión */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
     </nav>
   );
 };

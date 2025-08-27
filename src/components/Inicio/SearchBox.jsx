@@ -277,7 +277,7 @@ const SearchBox = () => {
 
   return (
     <div ref={containerRef} className="md:absolute md:bottom-8 md:left-1/2 md:transform md:-translate-x-1/2 w-full max-w-6xl px-4 z-10 relative mt-6">
-      <div className="bg-white md:rounded-full rounded-lg shadow-lg md:p-6 p-8" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+      <div className="bg-white md:rounded-4xl rounded-lg shadow-lg md:p-6 p-8" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
         {/* Desktop layout */}
         <div className="hidden md:flex items-center gap-4">
           {/* Origen */}
