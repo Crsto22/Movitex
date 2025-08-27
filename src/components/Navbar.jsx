@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
-import Movitex from "../../public/Movitex.svg";
+import Movitex from "../assets/Movitex.svg";
 import LoginModal from './LoginModal';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

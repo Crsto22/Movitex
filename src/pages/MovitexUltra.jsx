@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import MovitexUltraImg from '../assets/services/MovitexUltra/MovitexUltra.png';
@@ -9,34 +10,97 @@ import MovitexUltraServicio4 from '../assets/services/MovitexUltra/movitexultra-
 import { BusFront, RockingChair, Clapperboard, MapPinned, Toilet, Gauge, Wind, Zap, Layers, Tv } from 'lucide-react';
 
 const MovitexUltra = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [busAnimationStart, setBusAnimationStart] = useState(false);
+
+  useEffect(() => {
+    // Iniciar animaciones después de que el componente se monte
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+      setBusAnimationStart(true);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
       
       <section className="relative h-80 mt-16 flex items-center justify-center overflow-hidden">
-        {/* Fondo con gradiente diagonal dividido */}
+        {/* Fondo con gradiente diagonal dividido animado */}
         <div className="absolute inset-0">
-          {/* Sección izquierda - Amarillo Movitex */}
-          <div className="absolute inset-0 bg-[#1C1A1A]"></div>
+          {/* Sección izquierda - Negro Ultra con animación */}
+          <div 
+            className={`absolute inset-0 bg-gradient-to-r from-[#1C1A1A] via-[#2a2626] to-[#1C1A1A] transition-all duration-1000 ${
+              isLoaded ? 'opacity-100 scale-100' : 'opacity-80 scale-105'
+            }`}
+            style={{
+              backgroundSize: '200% 100%',
+              animation: isLoaded ? 'gradientShiftUltra 4s ease-in-out infinite' : 'none'
+            }}
+          ></div>
           
-          {/* Forma geométrica angular para dividir */}
+          {/* Forma geométrica angular para dividir con animación */}
           <div className="absolute inset-0">
-            <svg className="w-full h-full" viewBox="0 0 1620 320" preserveAspectRatio="xMidYMid slice">
+            <svg 
+              className={`w-full h-full transition-transform duration-1000 ${
+                isLoaded ? 'scale-100 rotate-0' : 'scale-110 rotate-1'
+              }`} 
+              viewBox="0 0 1620 320" 
+              preserveAspectRatio="xMidYMid slice"
+            >
               <defs>
                 <linearGradient id="rightGradientUltra" x1="10%" y1="10%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#f8fafc" />
+                  <stop offset="50%" stopColor="#f1f5f9" />
                   <stop offset="100%" stopColor="#e2e8f0" />
+                </linearGradient>
+                <linearGradient id="animatedGradientUltra" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f8fafc" />
+                  <stop offset="50%" stopColor="#f1f5f9" />
+                  <stop offset="100%" stopColor="#e2e8f0" />
+                  <animateTransform
+                    attributeName="gradientTransform"
+                    type="translate"
+                    values="0 0; 50 0; 0 0"
+                    dur="3s"
+                    repeatCount="indefinite"
+                  />
                 </linearGradient>
               </defs>
               <polygon 
                 points="1200,0 1920,0 1920,320 800,320" 
-                fill="url(#rightGradientUltra)"
+                fill={isLoaded ? "url(#animatedGradientUltra)" : "url(#rightGradientUltra)"}
+                className="transition-all duration-1000"
               />
             </svg>
-            
           </div>
         </div>
+
+        {/* Añadir keyframes CSS para todas las animaciones */}
+        <style jsx>{`
+          @keyframes gradientShiftUltra {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          
+          @keyframes speedLinesReverseUltra {
+            0% { 
+              opacity: 0;
+              transform: translateX(20px) scaleX(0);
+            }
+            50% { 
+              opacity: 1;
+              transform: translateX(0px) scaleX(1);
+            }
+            100% { 
+              opacity: 0;
+              transform: translateX(-40px) scaleX(0.5);
+            }
+          }
+        `}</style>
 
         {/* Contenido principal */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,8 +108,12 @@ const MovitexUltra = () => {
             
             {/* Sección izquierda - Texto (7 columnas) */}
             <div className="lg:col-span-7 text-center lg:text-left">
-              {/* Logo principal */}
-              <div className="mb-4">
+              {/* Logo principal con animación */}
+              <div 
+                className={`mb-4 transform transition-all duration-1000 ${
+                  isLoaded ? 'translate-x-0 opacity-100 scale-100' : '-translate-x-8 opacity-0 scale-95'
+                }`}
+              >
                 <img 
                   src={MovitexUltraLogo} 
                   alt="Movitex Ultra Logo" 
@@ -53,8 +121,12 @@ const MovitexUltra = () => {
                 />
               </div>
 
-              {/* Eslogan */}
-              <div className="mb-6">
+              {/* Eslogan con animación */}
+              <div 
+                className={`mb-6 transform transition-all duration-1000 delay-300 ${
+                  isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-6 opacity-0'
+                }`}
+              >
                 <p className="text-sm md:text-base lg:text-lg text-white font-medium leading-relaxed max-w-lg mx-auto lg:mx-0 drop-shadow-lg">
                   La experiencia de lujo definitiva. Viaja como nunca antes lo habías imaginado.
                 </p>
@@ -63,12 +135,62 @@ const MovitexUltra = () => {
 
             {/* Sección derecha - Imagen del bus (5 columnas) */}
             <div className="lg:col-span-5 relative">
-              <div className="relative transform hover:scale-105 transition-transform duration-500">
-                <img 
-                  src={MovitexUltraImg} 
-                  alt="Movitex Ultra Bus" 
-                  className="w-full mx-auto drop-shadow-xl"
-                />
+              <div className="relative overflow-hidden">
+                {/* Bus con animación de entrada desde la derecha */}
+                <div 
+                  className={`transform transition-all duration-2000 ease-out ${
+                    busAnimationStart 
+                      ? 'translate-x-0 opacity-100 scale-100' 
+                      : 'translate-x-[150%] opacity-0 scale-90'
+                  }`}
+                  style={{
+                    transitionDelay: '600ms'
+                  }}
+                >
+                  <img 
+                    src={MovitexUltraImg} 
+                    alt="Movitex Ultra Bus" 
+                    className="w-full mx-auto drop-shadow-xl hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+
+                {/* Efecto de polvo/humo detrás del bus */}
+                <div 
+                  className={`absolute bottom-0 right-0 w-32 h-8 bg-gradient-to-l from-transparent via-gray-400/40 to-transparent rounded-full blur-sm transform transition-all duration-2000 ${
+                    busAnimationStart 
+                      ? 'translate-x-0 opacity-60' 
+                      : 'translate-x-[200%] opacity-0'
+                  }`}
+                  style={{
+                    transitionDelay: '800ms'
+                  }}
+                ></div>
+
+                {/* Líneas de velocidad animadas desde la derecha */}
+                <div 
+                  className={`absolute top-1/2 right-0 w-full h-1 transform -translate-y-1/2 ${
+                    busAnimationStart ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <div 
+                    className="absolute top-0 right-0 w-8 h-0.5 bg-white/50 rounded-full"
+                    style={{
+                      animation: busAnimationStart ? 'speedLinesReverseUltra 1.5s ease-out 1s' : 'none'
+                    }}
+                  ></div>
+                  <div 
+                    className="absolute top-2 right-4 w-6 h-0.5 bg-white/40 rounded-full"
+                    style={{
+                      animation: busAnimationStart ? 'speedLinesReverseUltra 1.5s ease-out 1.2s' : 'none'
+                    }}
+                  ></div>
+                  <div 
+                    className="absolute top-4 right-2 w-4 h-0.5 bg-white/30 rounded-full"
+                    style={{
+                      animation: busAnimationStart ? 'speedLinesReverseUltra 1.5s ease-out 1.4s' : 'none'
+                    }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>

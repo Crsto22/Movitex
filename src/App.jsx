@@ -4,6 +4,7 @@ import MovitexOne from './pages/MovitexOne'
 import MovitexPro from './pages/MovitexPro'
 import MovitexUltra from './pages/MovitexUltra'
 import Contactos from './pages/Contactos'
+import ScrollToTop from './components/ScrollToTop'
 function App() {
   
   return (
@@ -17,6 +18,9 @@ function App() {
         <Route path="/" element={<Navigate to="/inicio" replace />} />
         <Route path="*" element={<Navigate to="/inicio" replace />} />
       </Routes>
+      
+      {/* ScrollToTop disponible en todas las páginas */}
+      <ScrollToTop />
     </Router>
   )
 }
