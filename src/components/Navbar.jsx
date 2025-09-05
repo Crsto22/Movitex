@@ -1,23 +1,62 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import Logo from '../assets/Logo.png';
 import Movitex from "../assets/Movitex.svg";
+import User from '../assets/User.png';
 import LoginModal from './LoginModal';
+import RegisterModal from './RegisterModal';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const { user, userData, logoutUser, loading } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const openLoginModal = () => {
-    setIsLoginModalOpen(true);
+    if (!user) {
+      setIsLoginModalOpen(true);
+    } else {
+      setUserDropdownOpen(!userDropdownOpen);
+    }
   };
 
   const closeLoginModal = () => {
     setIsLoginModalOpen(false);
+  };
+
+  const openRegisterModal = () => {
+    setIsLoginModalOpen(false);
+    setIsRegisterModalOpen(true);
+  };
+
+  const closeRegisterModal = () => {
+    setIsRegisterModalOpen(false);
+  };
+
+  const backToLoginModal = () => {
+    setIsRegisterModalOpen(false);
+    setIsLoginModalOpen(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const result = await logoutUser();
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error('Error al cerrar sesión');
+    }
+    setUserDropdownOpen(false);
   };
 
   useEffect(() => {
@@ -32,6 +71,20 @@ const Navbar = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Cerrar dropdown cuando se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownOpen && !event.target.closest('.user-dropdown-container')) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userDropdownOpen]);
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 rounded-b-full  ${
@@ -98,12 +151,65 @@ const Navbar = () => {
 
           {/* Icono circular y botón hamburguesa */}
           <div className="flex items-center space-x-4">
-            {/* Icono circular con SVG - Click para abrir modal de login */}
-            <div 
-              onClick={openLoginModal}
-              className="w-10 h-10 bg-[#fab926] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200"    
-            >
-             <img src={Movitex} alt="Movitex" className="w-6 h-6" />
+            {/* Área del usuario / login */}
+            <div className="relative">
+              {!loading && (
+                <>
+                  {user && user.email_confirmed_at ? (
+                    // Usuario logueado con email confirmado
+                    <div className="flex items-center space-x-3 user-dropdown-container">
+                      {/* Icono de usuario */}
+                      <div 
+                        onClick={openLoginModal}
+                        className="w-10 h-10 bg-[#f0251f] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200"
+                      >
+                        <img src={User} alt="Usuario" className="w-6 h-6" />
+                      </div>
+                      
+                      {/* Dropdown del usuario */}
+                      {userDropdownOpen && (
+                        <div className="absolute right-0 top-12 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                          <div className="py-1">
+                            <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                              <p className="font-medium" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                                {userData ? `${userData.nombre} ${userData.apellido}` : user.email}
+                              </p>
+                              {userData && (
+                                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                                  {userData.correo}
+                                </p>
+                              )}
+                            </div>
+                            <Link
+                              to="/mi-cuenta"
+                              className="block w-full text-left px-4 py-2 text-sm text-[#f0251f] hover:bg-gray-50 transition-colors duration-200"
+                              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                              onClick={() => setUserDropdownOpen(false)}
+                            >
+                              Mi Cuenta
+                            </Link>
+                            <button
+                              onClick={handleLogout}
+                              className="w-full text-left px-4 py-2 text-sm text-[#f0251f] hover:bg-gray-50 transition-colors duration-200"
+                              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                            >
+                              Cerrar Sesión
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Usuario no logueado - mostrar icono para login
+                    <div 
+                      onClick={openLoginModal}
+                      className="w-10 h-10 bg-[#fab926] rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 hover:scale-105 transition-all duration-200"
+                    >
+                      <img src={Movitex} alt="Movitex" className="w-6 h-6" />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Botón hamburguesa para móvil */}
@@ -132,11 +238,32 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-                                           <Link 
+              {/* Mostrar usuario en móvil */}
+              {user && user.email_confirmed_at && (
+                <div className="px-3 py-2 border-b border-gray-200 mb-2">
+                  <p className="text-sm font-medium text-[#f0251f]" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                    {userData ? `${userData.nombre} ${userData.apellido}` : user.email}
+                  </p>
+                  {userData && (
+                    <p className="text-xs text-gray-500" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      {userData.correo}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="mt-1 text-sm text-gray-600 hover:text-[#f0251f] transition-colors duration-200"
+                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
+              
+              <Link 
                 to="/inicio" 
                 className="block px-3 py-2 rounded-md font-medium text-[#f0251f] hover:text-[#fab926] transition-colors duration-200"
                 style={{ fontFamily: 'MusticaPro, sans-serif' }}
-             >
+              >
                 Inicio
               </Link>
                
@@ -180,7 +307,18 @@ const Navbar = () => {
       </div>
       
       {/* Modal de inicio de sesión */}
-      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={closeLoginModal} 
+        onOpenRegister={openRegisterModal}
+      />
+      
+      {/* Modal de registro */}
+      <RegisterModal 
+        isOpen={isRegisterModalOpen} 
+        onClose={closeRegisterModal} 
+        onBackToLogin={backToLoginModal}
+      />
     </nav>
   );
 };
