@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import Movitex from "../assets/Movitex.svg";
 
 const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
@@ -13,7 +14,9 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
   const [showResendButton, setShowResendButton] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const { loginUser, resendConfirmationEmail, resetPasswordForEmail } = useAuth();
+  const captchaRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -35,21 +38,36 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error('Por favor completa la verificación de seguridad');
+      return;
+    }
+
     setIsLoading(true);
     setShowResendButton(false);
     
     try {
-      const result = await loginUser(email, password);
+      const result = await loginUser(email, password, captchaToken);
       
       if (result.success) {
         toast.success(result.message);
         // Limpiar formulario
         setEmail('');
         setPassword('');
+        setCaptchaToken('');
+        // Reset captcha
+        if (captchaRef.current) {
+          captchaRef.current.resetCaptcha();
+        }
         // Cerrar modal
-        onClose();
+        handleCloseModal();
       } else {
         toast.error(result.message);
+        // Reset captcha en caso de error
+        if (captchaRef.current) {
+          captchaRef.current.resetCaptcha();
+        }
+        setCaptchaToken('');
         // Mostrar botón de reenvío si el error es de email no confirmado
         if (result.message.includes('confirmar tu correo')) {
           setShowResendButton(true);
@@ -57,6 +75,11 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión');
+      // Reset captcha en caso de error
+      if (captchaRef.current) {
+        captchaRef.current.resetCaptcha();
+      }
+      setCaptchaToken('');
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +136,24 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
+  // Función para manejar la verificación exitosa del captcha
+  const onCaptchaVerify = (token) => {
+    setCaptchaToken(token);
+  };
+
+  // Función para manejar errores del captcha
+  const onCaptchaError = (err) => {
+    console.error('hCaptcha Error:', err);
+    toast.error('Error en la verificación de seguridad. Inténtalo de nuevo.');
+    setCaptchaToken('');
+  };
+
+  // Función para manejar cuando el captcha expira
+  const onCaptchaExpire = () => {
+    setCaptchaToken('');
+    toast.warning('La verificación de seguridad ha expirado. Por favor, complétala nuevamente.');
+  };
+
   const handleShowForgotPassword = () => {
     setShowForgotPassword(true);
     setResetEmail(email); // Pre-llenar con el email del formulario principal
@@ -129,12 +170,31 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
+  // Función para manejar el cierre del modal
+  const handleCloseModal = () => {
+    // Reset captcha cuando se cierra el modal
+    if (captchaRef.current) {
+      captchaRef.current.resetCaptcha();
+    }
+    setCaptchaToken('');
+    setEmail('');
+    setPassword('');
+    setShowResendButton(false);
+    setShowForgotPassword(false);
+    setResetEmail('');
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={handleBackdropClick}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseModal();
+            }
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -167,7 +227,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
             {/* Header del modal */}
             <div className="relative p-6 border-b border-gray-100">
               <button
-                onClick={onClose}
+                onClick={handleCloseModal}
                 className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
               >
                 <X size={20} className="text-gray-500" />
@@ -257,6 +317,19 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
+                </div>
+
+                {/* hCaptcha */}
+                <div className="flex justify-center">
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey="92c028ac-25ea-4202-990a-b78c0a140b68"
+                    onVerify={onCaptchaVerify}
+                    onError={onCaptchaError}
+                    onExpire={onCaptchaExpire}
+                    size="normal"
+                    theme="light"
+                  />
                 </div>
 
                 {/* Botón de iniciar sesión */}
@@ -375,3 +448,6 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
 };
 
 export default LoginModal;
+
+
+
