@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
 import Movitex from "../assets/Movitex.svg";
 
 const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
@@ -14,9 +13,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
   const [showResendButton, setShowResendButton] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
   const { loginUser, resendConfirmationEmail, resetPasswordForEmail } = useAuth();
-  const captchaRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,7 +29,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     if (!email || !password) {
       toast.error('Por favor completa todos los campos');
       return;
@@ -40,41 +37,19 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
 
     setIsLoading(true);
     setShowResendButton(false);
-
+    
     try {
-      // Ejecuta el desafío invisible de hCaptcha
-      captchaRef.current.execute();
-    } catch (error) {
-      toast.error('Error al iniciar la verificación de seguridad');
-      setIsLoading(false);
-    }
-  };
-
-  const onCaptchaVerify = async (token) => {
-    setCaptchaToken(token);
-
-    try {
-      const result = await loginUser(email, password, token);
-
+      const result = await loginUser(email, password);
+      
       if (result.success) {
         toast.success(result.message);
         // Limpiar formulario
         setEmail('');
         setPassword('');
-        setCaptchaToken('');
-        // Reset captcha
-        if (captchaRef.current) {
-          captchaRef.current.resetCaptcha();
-        }
         // Cerrar modal
-        handleCloseModal();
+        onClose();
       } else {
         toast.error(result.message);
-        // Reset captcha en caso de error
-        if (captchaRef.current) {
-          captchaRef.current.resetCaptcha();
-        }
-        setCaptchaToken('');
         // Mostrar botón de reenvío si el error es de email no confirmado
         if (result.message.includes('confirmar tu correo')) {
           setShowResendButton(true);
@@ -82,11 +57,6 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión');
-      // Reset captcha en caso de error
-      if (captchaRef.current) {
-        captchaRef.current.resetCaptcha();
-      }
-      setCaptchaToken('');
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +69,10 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
 
     setIsLoading(true);
-
+    
     try {
       const result = await resendConfirmationEmail(email);
-
+      
       if (result.success) {
         toast.success(result.message);
         setShowResendButton(false);
@@ -118,17 +88,17 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-
+    
     if (!resetEmail) {
       toast.error('Por favor ingresa tu correo electrónico');
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
       const result = await resetPasswordForEmail(resetEmail);
-
+      
       if (result.success) {
         toast.success(result.message);
         setShowForgotPassword(false);
@@ -143,19 +113,6 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
-  const onCaptchaError = (err) => {
-    console.error('hCaptcha Error:', err);
-    toast.error('Error en la verificación de seguridad. Inténtalo de nuevo.');
-    setCaptchaToken('');
-    setIsLoading(false);
-  };
-
-  const onCaptchaExpire = () => {
-    setCaptchaToken('');
-    toast.warning('La verificación de seguridad ha expirado. Por favor, intenta de nuevo.');
-    setIsLoading(false);
-  };
-
   const handleShowForgotPassword = () => {
     setShowForgotPassword(true);
     setResetEmail(email); // Pre-llenar con el email del formulario principal
@@ -166,66 +123,74 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     setResetEmail('');
   };
 
-  const handleCloseModal = () => {
-    if (captchaRef.current) {
-      captchaRef.current.resetCaptcha();
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
     }
-    setCaptchaToken('');
-    setEmail('');
-    setPassword('');
-    setShowResendButton(false);
-    setShowForgotPassword(false);
-    setResetEmail('');
-    onClose();
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <motion.div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleCloseModal();
-            }
-          }}
+          onClick={handleBackdropClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <motion.div
+          <motion.div 
             className="bg-white rounded-3xl shadow-2xl w-full max-w-md"
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            transition={{ type: 'spring', duration: 0.4, damping: 25, stiffness: 300 }}
+            initial={{ 
+              opacity: 0, 
+              scale: 0.8, 
+              y: 50 
+            }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1, 
+              y: 0 
+            }}
+            exit={{ 
+              opacity: 0, 
+              scale: 0.8, 
+              y: 50 
+            }}
+            transition={{ 
+              type: "spring",
+              duration: 0.4,
+              damping: 25,
+              stiffness: 300
+            }}
           >
             {/* Header del modal */}
             <div className="relative p-6 border-b border-gray-100">
               <button
-                onClick={handleCloseModal}
+                onClick={onClose}
                 className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
               >
                 <X size={20} className="text-gray-500" />
               </button>
+              
               <div className="text-center">
-                <h2
+                <h2 
                   className="text-2xl font-bold text-gray-800 mb-2"
                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
                 >
-                  Inicia tu sesión de compra
+                 Inicia tu sesión de compra
                 </h2>
               </div>
             </div>
 
             {/* Formulario */}
             {!showForgotPassword ? (
+              // Formulario de login
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 {/* Campo de email */}
                 <div className="space-y-2">
-                  <label
-                    htmlFor="email"
+                  <label 
+                    htmlFor="email" 
                     className="block text-sm font-semibold text-gray-700"
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
                   >
@@ -249,8 +214,8 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
 
                 {/* Campo de contraseña */}
                 <div className="space-y-2">
-                  <label
-                    htmlFor="password"
+                  <label 
+                    htmlFor="password" 
                     className="block text-sm font-semibold text-gray-700"
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
                   >
@@ -294,41 +259,13 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   </button>
                 </div>
 
-                {/* hCaptcha (invisible) */}
-                <HCaptcha
-                  ref={captchaRef}
-                  sitekey="92c028ac-25ea-4202-990a-b78c0a140b68"
-                  size="invisible"
-                  onVerify={onCaptchaVerify}
-                  onError={onCaptchaError}
-                  onExpire={onCaptchaExpire}
-                />
-
-                {/* Indicador visual de hCaptcha */}
-                <div className="mt-4 text-sm text-gray-600 flex items-center justify-center">
-                  <img
-                    src="https://www.hcaptcha.com/images/hcaptcha-logo.svg"
-                    alt="hCaptcha logo"
-                    className="w-5 mr-2"
-                  />
-                  Protegido por hCaptcha.{' '}
-                  <a
-                    href="https://www.hcaptcha.com/privacy"
-                    target="_blank"
-                    rel="noopener"
-                    className="underline hover:text-[#f0251f]"
-                  >
-                    Política de privacidad
-                  </a>
-                </div>
-
                 {/* Botón de iniciar sesión */}
                 <button
                   type="submit"
                   disabled={isLoading}
                   className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
                     isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-[#f0251f] cursor-pointer text-white hover:shadow-lg transform hover:scale-[1.02]'
                   }`}
                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
@@ -343,8 +280,8 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                     onClick={handleResendConfirmation}
                     disabled={isLoading}
                     className={`w-full py-2 px-4 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isLoading
-                        ? 'bg-gray-200 cursor-not-allowed text-gray-500'
+                      isLoading 
+                        ? 'bg-gray-200 cursor-not-allowed text-gray-500' 
                         : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
                     }`}
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
@@ -366,9 +303,10 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                 </div>
               </form>
             ) : (
+              // Formulario de recuperación de contraseña
               <form onSubmit={handleForgotPassword} className="p-6 space-y-6">
                 <div className="text-center mb-4">
-                  <h3
+                  <h3 
                     className="text-lg font-bold text-gray-800 mb-2"
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
                   >
@@ -379,9 +317,10 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   </p>
                 </div>
 
+                {/* Campo de email para recuperación */}
                 <div className="space-y-2">
-                  <label
-                    htmlFor="resetEmail"
+                  <label 
+                    htmlFor="resetEmail" 
                     className="block text-sm font-semibold text-gray-700"
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
                   >
@@ -403,12 +342,13 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   </div>
                 </div>
 
+                {/* Botón de enviar */}
                 <button
                   type="submit"
                   disabled={isLoading}
                   className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                    isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
+                    isLoading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-[#f0251f] cursor-pointer text-white hover:shadow-lg transform hover:scale-[1.02]'
                   }`}
                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
@@ -416,6 +356,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   {isLoading ? 'Enviando...' : 'Enviar enlace de recuperación'}
                 </button>
 
+                {/* Botón para volver al login */}
                 <button
                   type="button"
                   onClick={handleBackToLogin}
