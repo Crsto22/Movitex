@@ -50,20 +50,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Función para registrar un nuevo usuario
-  const registerUser = async (userData) => {
+  const registerUser = async (userData, captchaToken) => {
     try {
       setLoading(true);
       
       const { documento, telefono, nombre, apellido, email, password } = userData;
 
       // Paso 1: Crear usuario en Supabase Auth con confirmación de email
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const signUpOptions = {
         email: email,
         password: password,
         options: {
           emailRedirectTo: `${window.location.origin}/confirm-email`
         }
-      });
+      };
+
+      // Agregar captchaToken si está disponible
+      if (captchaToken) {
+        signUpOptions.options.captchaToken = captchaToken;
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.signUp(signUpOptions);
 
       if (authError) {
         throw new Error(authError.message);
@@ -143,14 +150,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Función para iniciar sesión
-  const loginUser = async (email, password) => {
+  const loginUser = async (email, password, captchaToken) => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const signInOptions = {
         email: email,
         password: password,
-      });
+      };
+
+      // Agregar captchaToken si está disponible
+      if (captchaToken) {
+        signInOptions.options = { captchaToken };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword(signInOptions);
 
       if (error) {
         throw new Error(error.message);
@@ -364,13 +378,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Función para enviar correo de recuperación de contraseña
-  const resetPasswordForEmail = async (email) => {
+  const resetPasswordForEmail = async (email, captchaToken) => {
     try {
       setLoading(true);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const resetOptions = {
         redirectTo: `${window.location.origin}/reset-password`
-      });
+      };
+
+      // Agregar captchaToken si está disponible
+      if (captchaToken) {
+        resetOptions.captchaToken = captchaToken;
+      }
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions);
 
       if (error) {
         throw error;

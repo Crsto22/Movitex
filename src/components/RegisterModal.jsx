@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText } from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -15,12 +16,20 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState();
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Resetear token de captcha cuando se abre el modal
+      setCaptchaToken(undefined);
+      // Incrementar key para forzar recreación de Turnstile
+      setTurnstileKey(prev => prev + 1);
     } else {
       document.body.style.overflow = 'unset';
+      // Limpiar token cuando se cierra el modal
+      setCaptchaToken(undefined);
     }
 
     return () => {
@@ -74,9 +83,14 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error('Por favor completa la verificación de seguridad');
+      return;
+    }
+
     try {
-      // Llamar a la función de registro
-      const result = await registerUser(formData);
+      // Llamar a la función de registro con el captcha token
+      const result = await registerUser(formData, captchaToken);
       
       if (result.success) {
         // Mostrar toast de éxito
@@ -91,6 +105,7 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
           email: '',
           password: ''
         });
+        setCaptchaToken(undefined);
         
         // Cerrar modal de registro y abrir modal de login
         onClose();
@@ -99,11 +114,17 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
       } else {
         // Mostrar toast de error
         toast.error(result.message);
+        // Resetear captcha después de error para permitir nuevo intento
+        setCaptchaToken(undefined);
+        setTurnstileKey(prev => prev + 1);
       }
       
     } catch (error) {
       console.error('Error inesperado en el registro:', error);
       toast.error('Ocurrió un error inesperado. Por favor intenta nuevamente.');
+      // Resetear captcha después de error
+      setCaptchaToken(undefined);
+      setTurnstileKey(prev => prev + 1);
     }
   };
 
@@ -336,12 +357,31 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
                 </div>
               </div>
 
+              {/* Cloudflare Turnstile */}
+              <div className="flex justify-center">
+                <Turnstile
+                  key={`register-turnstile-${turnstileKey}`}
+                  siteKey="0x4AAAAAAByq8u6lh8h9iU0D"
+                  onSuccess={(token) => {
+                    setCaptchaToken(token);
+                  }}
+                  onError={() => {
+                    setCaptchaToken(undefined);
+                    toast.error('Error en la verificación de seguridad');
+                  }}
+                  onExpire={() => {
+                    setCaptchaToken(undefined);
+                    toast.error('La verificación de seguridad ha expirado');
+                  }}
+                />
+              </div>
+
               {/* Botón de registrar */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !captchaToken}
                 className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                  loading
+                  loading || !captchaToken
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-[#f0251f] cursor-pointer hover:shadow-lg transform hover:scale-[1.02]'
                 } text-white`}

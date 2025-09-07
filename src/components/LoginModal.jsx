@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Movitex from "../assets/Movitex.svg";
@@ -13,13 +14,28 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
   const [showResendButton, setShowResendButton] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [captchaToken, setCaptchaToken] = useState();
+  const [resetCaptchaToken, setResetCaptchaToken] = useState();
+  const [loginTurnstileKey, setLoginTurnstileKey] = useState(0);
+  const [resetTurnstileKey, setResetTurnstileKey] = useState(0);
   const { loginUser, resendConfirmationEmail, resetPasswordForEmail } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Resetear tokens de captcha cuando se abre el modal
+      setCaptchaToken(undefined);
+      setResetCaptchaToken(undefined);
+      // Incrementar keys para forzar recreación de Turnstile
+      setLoginTurnstileKey(prev => prev + 1);
+      setResetTurnstileKey(prev => prev + 1);
     } else {
       document.body.style.overflow = 'unset';
+      // Limpiar estados cuando se cierra el modal
+      setCaptchaToken(undefined);
+      setResetCaptchaToken(undefined);
+      setShowResendButton(false);
+      setShowForgotPassword(false);
     }
 
     return () => {
@@ -35,17 +51,23 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error('Por favor completa la verificación de seguridad');
+      return;
+    }
+
     setIsLoading(true);
     setShowResendButton(false);
     
     try {
-      const result = await loginUser(email, password);
+      const result = await loginUser(email, password, captchaToken);
       
       if (result.success) {
         toast.success(result.message);
         // Limpiar formulario
         setEmail('');
         setPassword('');
+        setCaptchaToken(undefined);
         // Cerrar modal
         onClose();
       } else {
@@ -54,9 +76,15 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
         if (result.message.includes('confirmar tu correo')) {
           setShowResendButton(true);
         }
+        // Resetear captcha después de error para permitir nuevo intento
+        setCaptchaToken(undefined);
+        setLoginTurnstileKey(prev => prev + 1);
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión');
+      // Resetear captcha después de error
+      setCaptchaToken(undefined);
+      setLoginTurnstileKey(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -94,20 +122,32 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       return;
     }
 
+    if (!resetCaptchaToken) {
+      toast.error('Por favor completa la verificación de seguridad');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const result = await resetPasswordForEmail(resetEmail);
+      const result = await resetPasswordForEmail(resetEmail, resetCaptchaToken);
       
       if (result.success) {
         toast.success(result.message);
         setShowForgotPassword(false);
         setResetEmail('');
+        setResetCaptchaToken(undefined);
       } else {
         toast.error(result.message);
+        // Resetear captcha después de error para permitir nuevo intento
+        setResetCaptchaToken(undefined);
+        setResetTurnstileKey(prev => prev + 1);
       }
     } catch (error) {
       toast.error('Error al enviar el correo de recuperación');
+      // Resetear captcha después de error
+      setResetCaptchaToken(undefined);
+      setResetTurnstileKey(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +156,23 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
   const handleShowForgotPassword = () => {
     setShowForgotPassword(true);
     setResetEmail(email); // Pre-llenar con el email del formulario principal
+    // Resetear tokens al cambiar de vista
+    setCaptchaToken(undefined);
+    setResetCaptchaToken(undefined);
+    // Incrementar keys para forzar recreación
+    setLoginTurnstileKey(prev => prev + 1);
+    setResetTurnstileKey(prev => prev + 1);
   };
 
   const handleBackToLogin = () => {
     setShowForgotPassword(false);
     setResetEmail('');
+    // Resetear tokens al cambiar de vista
+    setCaptchaToken(undefined);
+    setResetCaptchaToken(undefined);
+    // Incrementar keys para forzar recreación
+    setLoginTurnstileKey(prev => prev + 1);
+    setResetTurnstileKey(prev => prev + 1);
   };
 
   const handleBackdropClick = (e) => {
@@ -259,12 +311,31 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   </button>
                 </div>
 
+                {/* Cloudflare Turnstile */}
+                <div className="flex justify-center">
+                  <Turnstile
+                    key={`login-turnstile-${loginTurnstileKey}`}
+                    siteKey="0x4AAAAAAByq8u6lh8h9iU0D"
+                    onSuccess={(token) => {
+                      setCaptchaToken(token);
+                    }}
+                    onError={() => {
+                      setCaptchaToken(undefined);
+                      toast.error('Error en la verificación de seguridad');
+                    }}
+                    onExpire={() => {
+                      setCaptchaToken(undefined);
+                      toast.error('La verificación de seguridad ha expirado');
+                    }}
+                  />
+                </div>
+
                 {/* Botón de iniciar sesión */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !captchaToken}
                   className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                    isLoading
+                    isLoading || !captchaToken
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-[#f0251f] cursor-pointer text-white hover:shadow-lg transform hover:scale-[1.02]'
                   }`}
@@ -342,12 +413,31 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   </div>
                 </div>
 
+                {/* Cloudflare Turnstile para recuperación */}
+                <div className="flex justify-center">
+                  <Turnstile
+                    key={`reset-turnstile-${resetTurnstileKey}`}
+                    siteKey="0x4AAAAAAByq8u6lh8h9iU0D"
+                    onSuccess={(token) => {
+                      setResetCaptchaToken(token);
+                    }}
+                    onError={() => {
+                      setResetCaptchaToken(undefined);
+                      toast.error('Error en la verificación de seguridad');
+                    }}
+                    onExpire={() => {
+                      setResetCaptchaToken(undefined);
+                      toast.error('La verificación de seguridad ha expirado');
+                    }}
+                  />
+                </div>
+
                 {/* Botón de enviar */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !resetCaptchaToken}
                   className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                    isLoading 
+                    isLoading || !resetCaptchaToken
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-[#f0251f] cursor-pointer text-white hover:shadow-lg transform hover:scale-[1.02]'
                   }`}
