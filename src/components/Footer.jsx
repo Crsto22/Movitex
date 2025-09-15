@@ -2,7 +2,7 @@ import { MapPin, Phone, Mail, Clock, Facebook, Twitter, Instagram } from 'lucide
 import LogoBN from '../assets/LogoBN.png';
 const Footer = () => {
   return (
-    <footer className="bg-[#f0251f] text-white ">
+    <footer className="bg-[#f0251f] text-white rounded-t-4xl">
       {/* Sección principal del footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -16,7 +16,7 @@ const Footer = () => {
                 className="h-32 object-contain "
               />
             </div>
-            <p className="text-white text-sm leading-relaxed mb-4">
+            <p className="text-white text-sm leading-relaxed mb-4" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
               Tu compañía de confianza para viajar por todo el Perú. 44 años brindando 
               las mejores experiencias de viaje con seguridad y comodidad.
             </p>
@@ -54,27 +54,27 @@ const Footer = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a href="#inicio" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#inicio" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Inicio
                 </a>
               </li>
               <li>
-                <a href="#servicios" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#servicios" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Servicios
                 </a>
               </li>
               <li>
-                <a href="#destinos" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#destinos" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Destinos
                 </a>
               </li>
               <li>
-                <a href="#contacto" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#contacto" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Contacto
                 </a>
               </li>
               <li>
-                <a href="#rastreo" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#rastreo" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Rastrea tu envío
                 </a>
               </li>
@@ -91,22 +91,22 @@ const Footer = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Transporte de pasajeros
                 </a>
               </li>
               <li>
-                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Encomiendas
                 </a>
               </li>
               <li>
-                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Servicios corporativos
                 </a>
               </li>
               <li>
-                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm">
+                <a href="#" className="text-white hover:text-[#fab926] transition-colors duration-200 text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   Tours y excursiones
                 </a>
               </li>
@@ -125,7 +125,7 @@ const Footer = () => {
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-[#f0251f] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-white text-sm">
+                  <p className="text-white text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     Av. Principal 123, Lima - Perú
                   </p>
                 </div>
@@ -133,14 +133,14 @@ const Footer = () => {
               
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-[#f0251f] flex-shrink-0" />
-                <p className="text-white text-sm">
+                <p className="text-white text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   +51 1 234-5678
                 </p>
               </div>
               
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-[#f0251f] flex-shrink-0" />
-                <p className="text-white text-sm">
+                <p className="text-white text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                   info@movitex.com.pe
                 </p>
               </div>
@@ -148,10 +148,10 @@ const Footer = () => {
               <div className="flex items-start space-x-3">
                 <Clock className="w-5 h-5 text-[#f0251f] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-white text-sm">
+                  <p className="text-white text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     Lun - Dom: 24 horas
                   </p>
-                  <p className="text-white text-xs">
+                  <p className="text-white text-xs" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     Atención al cliente
                   </p>
                 </div>
@@ -162,25 +162,25 @@ const Footer = () => {
       </div>
 
       {/* Línea separadora */}
-      <div className="border-t border-white"></div>
+      <div className="border-t border-[#fab926] border-b-4 "></div>
 
       {/* Copyright */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="md:flex md:items-center md:justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6  ">
+        <div className="md:flex md:items-center md:justify-between ">
           <div className="text-center md:text-left">
-            <p className="text-white text-sm">
+            <p className="text-white text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
               © 2024 Movitex. Todos los derechos reservados.
             </p>
           </div>
           <div className="mt-4 md:mt-0 text-center md:text-right">
             <div className="flex flex-col sm:flex-row sm:space-x-6 space-y-2 sm:space-y-0 justify-center md:justify-end">
-              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200">
+              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                 Términos y condiciones
               </a>
-              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200">
+              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                 Política de privacidad
               </a>
-              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200">
+              <a href="#" className="text-white hover:text-[#fab926] text-sm transition-colors duration-200" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                 Libro de reclamaciones
               </a>
             </div>

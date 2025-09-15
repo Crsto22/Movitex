@@ -200,12 +200,12 @@ const MovitexUltra = () => {
       </section>
 
       {/* Sección de título */}
-      <section className="py-12 bg-white mt-16">
+      <section className="py-8 sm:py-12 bg-white mt-8 sm:mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl text-[#f0251f] mb-4" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl text-[#f0251f] mb-3 sm:mb-4" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
             Servicios Ultra Exclusivos
           </h2>
-          <p className="text-gray-600 max-w-4xl mx-auto" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+          <p className="text-sm sm:text-base text-gray-600 max-w-4xl mx-auto leading-relaxed" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
             La experiencia de lujo definitiva en nuestros buses de doble piso. Cada servicio está diseñado 
             para superar las expectativas más exigentes y redefinir el concepto de viaje premium.
           </p>
@@ -213,67 +213,67 @@ const MovitexUltra = () => {
       </section>
 
       {/* Franja de servicios */}
-      <section className="py-8">
+      <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#1C1A1A] rounded-2xl p-8">
-            <div className="grid grid-cols-10 gap-8">
+          <div className="bg-[#1C1A1A] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
               <div className="flex flex-col items-center text-center">
-                <Layers size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Layers size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Buses de 2 pisos
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <RockingChair size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <RockingChair size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Asientos 1er nivel
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <RockingChair size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <RockingChair size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Asientos 2do nivel
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Clapperboard size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Clapperboard size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Entretenimiento a bordo
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <MapPinned size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <MapPinned size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Monitoreo GPS las 24 hrs
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Tv size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Tv size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   TV personal 2do nivel
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Toilet size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Toilet size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Servicios higiénicos
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Wind size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Wind size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Aire climatizado
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Gauge size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Gauge size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Velocidad controlada
                 </p>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Zap size={40} className="text-white mb-4" />
-                <p className="text-white font-medium text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                <Zap size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
+                <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Cargador USB
                 </p>
               </div>
@@ -283,36 +283,69 @@ const MovitexUltra = () => {
       </section>
 
       {/* Galería de imágenes */}
-      <section className="py-8">
+      <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-8">
-            <div className="grid grid-cols-4 gap-10">
+          <div className="p-4 sm:p-6 lg:p-8">
+            {/* Layout para escritorio */}
+            <div className="hidden md:grid md:grid-cols-4 gap-6 lg:gap-10">
               <div className="flex justify-center">
                 <img
                   src={MovitexUltraServicio1}
                   alt="Movitex Ultra Servicio 1"
-                  className="w-full h-auto object-cover rounded-3xl"
+                  className="w-full h-auto object-cover rounded-2xl lg:rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300"
                 />
               </div>
               <div className="flex justify-center">
                 <img
                   src={MovitexUltraServicio2}
                   alt="Movitex Ultra Servicio 2"
-                  className="w-full h-auto object-cover rounded-3xl"
+                  className="w-full h-auto object-cover rounded-2xl lg:rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300"
                 />
               </div>
               <div className="flex justify-center">
                 <img
                   src={MovitexUltraServicio3}
                   alt="Movitex Ultra Servicio 3"
-                  className="w-full h-auto object-cover rounded-3xl"
+                  className="w-full h-auto object-cover rounded-2xl lg:rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300"
                 />
               </div>
               <div className="flex justify-center">
                 <img
                   src={MovitexUltraServicio4}
                   alt="Movitex Ultra Servicio 4"
-                  className="w-full h-auto object-cover rounded-3xl"
+                  className="w-full h-auto object-cover rounded-2xl lg:rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                />
+              </div>
+            </div>
+
+            {/* Layout móvil - 2 filas y 2 columnas */}
+            <div className="md:hidden grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="flex justify-center">
+                <img
+                  src={MovitexUltraServicio1}
+                  alt="Movitex Ultra Servicio 1"
+                  className="w-full h-auto object-cover rounded-xl shadow-md"
+                />
+              </div>
+              <div className="flex justify-center">
+                <img
+                  src={MovitexUltraServicio2}
+                  alt="Movitex Ultra Servicio 2"
+                  className="w-full h-auto object-cover rounded-xl shadow-md"
+                />
+              </div>
+              <div className="flex justify-center">
+                <img
+                  src={MovitexUltraServicio3}
+                  alt="Movitex Ultra Servicio 3"
+                  className="w-full h-auto object-cover rounded-xl shadow-md"
+                />
+              </div>
+              <div className="flex justify-center">
+                <img
+                  src={MovitexUltraServicio4}
+                  alt="Movitex Ultra Servicio 4"
+                  className="w-full h-auto object-cover rounded-xl shadow-md"
                 />
               </div>
             </div>

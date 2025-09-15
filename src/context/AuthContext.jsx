@@ -476,6 +476,200 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Función para actualizar la foto de perfil de Google en cada login
+  const updateGoogleProfilePhoto = async (user) => {
+    try {
+      // Solo proceder si es un usuario de Google y tiene foto
+      if (user.app_metadata?.provider !== 'google' || !user.user_metadata?.avatar_url) {
+        return { success: false, message: 'No es usuario de Google o no tiene foto' };
+      }
+
+      console.log('🖼️ Actualizando foto de perfil de Google...');
+      
+      // Obtener la URL más reciente de la foto de perfil
+      const newPhotoUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+      
+      if (!newPhotoUrl) {
+        console.log('❌ No se encontró URL de foto en los metadatos del usuario');
+        return { success: false, message: 'No hay URL de foto disponible' };
+      }
+
+      // Actualizar la foto en la base de datos
+      const { data, error } = await supabase
+        .from('usuarios')
+        .update({
+          foto_url: newPhotoUrl
+        })
+        .eq('id_usuario', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error actualizando foto en DB:', error);
+        return { success: false, message: error.message };
+      }
+
+      console.log('✅ Foto de perfil actualizada correctamente');
+      
+      // Actualizar el estado local inmediatamente
+      if (data) {
+        setUserData(data);
+        saveUserDataToStorage(data);
+      }
+
+      return { 
+        success: true, 
+        message: 'Foto actualizada',
+        newPhotoUrl: newPhotoUrl
+      };
+
+    } catch (error) {
+      console.error('❌ Error al actualizar foto de perfil:', error);
+      return { success: false, message: 'Error al actualizar foto' };
+    }
+  };
+  // Función para crear usuario en DB después de OAuth (Google)
+  const createUserFromOAuth = async (user) => {
+    try {
+      // Verificar si el usuario ya existe en la base de datos
+      const { data: existingUser, error: checkError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('id_usuario', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // Error diferente a "no encontrado"
+        throw checkError;
+      }
+
+      if (existingUser) {
+        // Usuario existe - actualizar foto de perfil si es de Google
+        if (user.app_metadata?.provider === 'google') {
+          console.log('👤 Usuario Google existente, actualizando foto...');
+          await updateGoogleProfilePhoto(user);
+        }
+
+        // Verificar si es un usuario incompleto (con datos temporales de Google)
+        const isIncompleteUser = existingUser.dni?.startsWith('GOOGLE_') || existingUser.telefono?.startsWith('GOOGLE_');
+        
+        if (isIncompleteUser) {
+          return {
+            success: true,
+            userData: existingUser,
+            needsCompletion: true // Indica que necesita completar datos
+          };
+        }
+
+        // Usuario ya existe y está completo
+        // Obtener datos actualizados después de la actualización de foto
+        const { data: refreshedUser } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('id_usuario', user.id)
+          .single();
+
+        return {
+          success: true,
+          userData: refreshedUser || existingUser,
+          needsCompletion: false
+        };
+      }
+
+      // Usuario no existe, crearlo con datos temporales
+      const { data: newUser, error: insertError } = await supabase
+        .from('usuarios')
+        .insert([
+          {
+            id_usuario: user.id,
+            nombre: user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name || 'Usuario',
+            apellido: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 'Google',
+            dni: 'GOOGLE_' + user.id.substring(0, 8), // DNI temporal único para usuarios de Google
+            correo: user.email,
+            telefono: 'GOOGLE_' + user.id.substring(0, 8), // Teléfono temporal único
+            foto_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+            fecha_creacion: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      console.log('🆕 Nuevo usuario Google creado con foto actualizada');
+
+      return {
+        success: true,
+        userData: newUser,
+        needsCompletion: true // Usuario nuevo necesita completar datos
+      };
+
+    } catch (error) {
+      console.error('Error al crear usuario desde OAuth:', error);
+      return {
+        success: false,
+        message: 'Error al guardar los datos del usuario'
+      };
+    }
+  };
+
+  // Función para completar el registro de Google con datos reales
+  const completeGoogleRegistration = async (userId, completeData) => {
+    try {
+      setLoading(true);
+
+      // Actualizar en la base de datos con los datos completos
+      const { data, error } = await supabase
+        .from('usuarios')
+        .update({
+          nombre: completeData.nombre,
+          apellido: completeData.apellido,
+          dni: completeData.documento,
+          telefono: completeData.telefono,
+          foto_url: completeData.foto_url || null
+        })
+        .eq('id_usuario', userId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Actualizar estado local y localStorage
+      setUserData(data);
+      saveUserDataToStorage(data);
+
+      console.log('✅ Registro de Google completado con foto actualizada');
+
+      return {
+        success: true,
+        message: 'Registro completado exitosamente',
+        userData: data
+      };
+
+    } catch (error) {
+      console.error('Error al completar registro de Google:', error);
+      
+      let errorMessage = error.message;
+      
+      if (error.message.includes('duplicate key value violates unique constraint "usuarios_dni_key"')) {
+        errorMessage = 'El número de documento ya está registrado';
+      } else if (error.message.includes('duplicate key value violates unique constraint "usuarios_telefono_key"')) {
+        errorMessage = 'El número de teléfono ya está registrado';
+      }
+
+      return {
+        success: false,
+        message: errorMessage
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Efecto para manejar cambios en la autenticación
   useEffect(() => {
     // Obtener sesión inicial
@@ -498,19 +692,43 @@ export const AuthProvider = ({ children }) => {
 
         setUser(session.user);
         
+        // Verificar si es un usuario de OAuth (Google) que necesita ser creado en DB
+        const isOAuthUser = session.user.app_metadata?.provider === 'google';
+        
         // Intentar cargar datos del usuario desde localStorage
         const storedUserData = getUserDataFromStorage();
         console.log('💾 Datos del localStorage:', storedUserData);
         console.log('🔑 ID de usuario actual:', session.user.id);
+        console.log('🔐 Provider:', session.user.app_metadata?.provider);
         
         if (storedUserData && storedUserData.id_usuario === session.user.id) {
           console.log('✅ Datos coinciden, usando localStorage');
           setUserData(storedUserData);
+          
+          // Actualizar foto de perfil si es usuario de Google
+          if (isOAuthUser) {
+            console.log('🖼️ Actualizando foto de Google en sesión inicial...');
+            updateGoogleProfilePhoto(session.user);
+          }
         } else {
           console.log('❌ Datos no coinciden o no existen, obteniendo de DB');
-          const userDataResult = await getUserData(session.user.id);
-          if (!userDataResult.success) {
-            console.warn('No se pudieron obtener los datos del usuario al inicializar:', userDataResult.message);
+          
+          if (isOAuthUser) {
+            // Usuario de Google OAuth, crear/obtener datos desde OAuth
+            console.log('🔑 Usuario OAuth, creando/obteniendo datos...');
+            const oauthResult = await createUserFromOAuth(session.user);
+            if (oauthResult.success) {
+              setUserData(oauthResult.userData);
+              saveUserDataToStorage(oauthResult.userData);
+            } else {
+              console.warn('No se pudieron crear/obtener datos del usuario OAuth:', oauthResult.message);
+            }
+          } else {
+            // Usuario tradicional, obtener datos normalmente
+            const userDataResult = await getUserData(session.user.id);
+            if (!userDataResult.success) {
+              console.warn('No se pudieron obtener los datos del usuario al inicializar:', userDataResult.message);
+            }
           }
         }
       } else {
@@ -544,16 +762,39 @@ export const AuthProvider = ({ children }) => {
 
           setUser(session.user);
           
+          // Verificar si es un usuario de OAuth (Google)
+          const isOAuthUser = session.user.app_metadata?.provider === 'google';
+          
           // Para evitar llamadas innecesarias a la DB, solo verificamos localStorage
           const storedUserData = getUserDataFromStorage();
           if (storedUserData && storedUserData.id_usuario === session.user.id) {
             console.log('✅ Usando datos de localStorage en auth change');
             setUserData(storedUserData);
+            
+            // Actualizar foto de perfil si es usuario de Google
+            if (isOAuthUser) {
+              console.log('🖼️ Actualizando foto de Google en auth change...');
+              updateGoogleProfilePhoto(session.user);
+            }
           } else {
             console.log('🔄 Obteniendo datos de DB en auth change');
-            const userDataResult = await getUserData(session.user.id);
-            if (!userDataResult.success) {
-              console.warn('No se pudieron obtener los datos del usuario:', userDataResult.message);
+            
+            if (isOAuthUser) {
+              // Usuario de Google OAuth
+              console.log('🔑 Usuario OAuth en auth change, creando/obteniendo datos...');
+              const oauthResult = await createUserFromOAuth(session.user);
+              if (oauthResult.success) {
+                setUserData(oauthResult.userData);
+                saveUserDataToStorage(oauthResult.userData);
+              } else {
+                console.warn('No se pudieron crear/obtener datos del usuario OAuth:', oauthResult.message);
+              }
+            } else {
+              // Usuario tradicional
+              const userDataResult = await getUserData(session.user.id);
+              if (!userDataResult.success) {
+                console.warn('No se pudieron obtener los datos del usuario:', userDataResult.message);
+              }
             }
           }
         } else {
@@ -569,6 +810,51 @@ export const AuthProvider = ({ children }) => {
     return () => subscription?.unsubscribe();
   }, []);
 
+  // Función para iniciar sesión con Google
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/inicio`
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // La redirección a Google se maneja automáticamente por Supabase
+      // El usuario será redirigido de vuelta a la aplicación después de la autenticación
+      
+      return {
+        success: true,
+        message: 'Redirigiendo a Google...',
+        data: data
+      };
+
+    } catch (error) {
+      console.error('Error en la autenticación con Google:', error);
+      
+      let errorMessage = error.message;
+      
+      if (error.message.includes('OAuth provider not enabled')) {
+        errorMessage = 'La autenticación con Google no está habilitada';
+      } else if (error.message.includes('Invalid redirect URL')) {
+        errorMessage = 'Error de configuración de redirección';
+      }
+
+      return {
+        success: false,
+        message: errorMessage
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Valor del contexto
   const value = {
     user,
@@ -576,6 +862,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     registerUser,
     loginUser,
+    signInWithGoogle,
+    completeGoogleRegistration,
+    updateGoogleProfilePhoto,
     logoutUser,
     getUserData,
     updateUserData,

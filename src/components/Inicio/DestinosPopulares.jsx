@@ -20,7 +20,7 @@ const DestinosPopulares = () => {
     },
     {
       id: 4,
-      nombre: "Huaraz",
+      nombre: "Arequipa",
       imagen: "/src/img/huaraz.jpg",
       size: "small"
     }
@@ -32,7 +32,7 @@ const DestinosPopulares = () => {
         {/* Título */}
         <div className="text-center mb-12">
           <h2 
-            className="text-4xl font-bold text-gray-800 mb-4"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-4"
             style={{ fontFamily: 'MusticaPro, sans-serif' }}
           >
            <span className="text-[#f0251f]">Destinos</span>  <span className="text-gray-800">populares</span>
@@ -118,28 +118,28 @@ const DestinosPopulares = () => {
           </div>
         </div>
 
-        {/* Layout móvil - Una sola columna */}
-        <div className="md:hidden space-y-4">
+        {/* Layout móvil - Grid de 2 filas y 2 columnas */}
+        <div className="md:hidden grid grid-cols-2 gap-3">
           {destinos.map((destino) => (
             <div 
               key={destino.id}
-              className="relative group overflow-hidden rounded-2xl shadow-lg cursor-pointer h-48"
+              className="relative group overflow-hidden rounded-xl shadow-lg cursor-pointer h-32 sm:h-36"
             >
               <div 
                 className="w-full h-full bg-cover bg-center bg-gray-300 transition-transform duration-300 group-hover:scale-105"
                 style={{ 
                   backgroundImage: destino.nombre === 'Lima' 
-                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1531088009291-b3d077a37b1b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://blog.incarail.com/wp-content/uploads/2024/10/FOTOS-Plaza-de-Armas-7.jpg')`
                     : destino.nombre === 'Trujillo'
-                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://hips.hearstapps.com/hmg-prod/images/trujillo-1633528946.jpg')`
                     : destino.nombre === 'Cusco'
-                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1587595628077-9c0f8fe1a3b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
-                    : `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`
+                    ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://blog.incarail.com/wp-content/uploads/2024/10/Catedral-de-Cusco.jpg')`
+                    : `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://www.raptravelperu.com/wp-content/uploads/portada-arequipa.webp')`
                 }}
               >
-                <div className="absolute bottom-4 left-4">
+                <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
                   <h3 
-                    className="text-white text-2xl font-bold drop-shadow-lg"
+                    className="text-white text-sm sm:text-base font-bold drop-shadow-lg"
                     style={{ fontFamily: 'MusticaPro, sans-serif', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
                   >
                     {destino.nombre}

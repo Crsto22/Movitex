@@ -8,3 +8,11 @@
   font-style: normal;
   font-display: swap;
 }
+
+@font-face {
+  font-family: 'Inter_18pt-Medium';
+  src: url('./assets/fonts/Inter_18pt-Medium.ttf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
