@@ -406,7 +406,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className={`w-full flex items-center justify-center gap-3 py-3 px-4 border-2 rounded-xl font-medium transition-all duration-200 ${
+                  className={`w-full cursor-pointer flex items-center justify-center gap-3 py-3 px-4 border-2 rounded-xl font-medium transition-all duration-200 ${
                     isLoading
                       ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                       : 'border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
