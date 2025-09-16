@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, User, Phone, FileText } from 'lucide-react';
+import { Mail, User, Phone, FileText, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDNIData, validateDNI } from '../services/dniService';
 import toast from 'react-hot-toast';
 
 const ModalRegistroGoogle = ({ isOpen, onClose }) => {
   const { completeGoogleRegistration, loading, user, userData } = useAuth();
+  const [searchingDNI, setSearchingDNI] = useState(false);
   const [formData, setFormData] = useState({
     documento: '',
     telefono: '',
@@ -52,6 +54,41 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
       ...prev,
       [field]: value
     }));
+  };
+
+  // Función para buscar DNI usando el servicio
+  const searchDNI = async () => {
+    const dni = formData.documento.trim();
+    
+    // Validar DNI usando el servicio
+    if (!validateDNI(dni)) {
+      toast.error('El DNI debe tener exactamente 8 dígitos');
+      return;
+    }
+
+    setSearchingDNI(true);
+    
+    try {
+      const result = await getDNIData(dni);
+
+      if (result.success) {
+        // Autocompletar nombre y apellidos
+        setFormData(prev => ({
+          ...prev,
+          nombre: result.data.nombre,
+          apellido: result.data.apellido
+        }));
+        
+        toast.success('Datos encontrados y completados automáticamente');
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error inesperado al consultar DNI:', error);
+      toast.error('Error inesperado. Por favor intenta nuevamente.');
+    } finally {
+      setSearchingDNI(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -129,28 +166,48 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Campo de documento */}
           <div className="space-y-2">
-            <label 
-              htmlFor="documento" 
-              className="block text-sm font-semibold text-gray-700"
-              style={{ fontFamily: 'MusticaPro, sans-serif' }}
-            >
-              Número de Documento <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FileText size={20} className="text-gray-400" />
-              </div>
-              <input
-                id="documento"
-                type="text"
-                value={formData.documento}
-                onChange={(e) => handleInputChange('documento', e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
-                placeholder="12345678"
-                required
-              />
-            </div>
-          </div>
+  <label 
+    htmlFor="documento" 
+    className="block text-sm font-semibold text-gray-700"
+    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+  >
+    Número de Documento
+  </label>
+  <div className="relative flex">
+    <div className="relative flex-1">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <FileText size={20} className="text-gray-400" />
+      </div>
+      <input
+        id="documento"
+        type="text"
+        value={formData.documento}
+        onChange={(e) => handleInputChange('documento', e.target.value)}
+        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-l-xl border-r-0 focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base focus:z-10"
+        placeholder="12345678"
+        maxLength="8"
+        required
+      />
+    </div>
+    <button
+      type="button"
+      onClick={searchDNI}
+      disabled={searchingDNI || !validateDNI(formData.documento)}
+      className={`px-4 py-3 rounded-r-xl border-2 border-l-0 transition-all duration-200 ${
+        searchingDNI || !validateDNI(formData.documento)
+          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+          : 'border-[#f0251f] bg-[#f0251f] text-white hover:bg-[#d11d19] hover:shadow-md'
+      }`}
+      title="Buscar datos por DNI"
+    >
+      {searchingDNI ? (
+        <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+      ) : (
+        <Search size={20} />
+      )}
+    </button>
+  </div>
+</div>
 
           {/* Campo de teléfono */}
           <div className="space-y-2">
@@ -171,7 +228,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
                 value={formData.telefono}
                 onChange={(e) => handleInputChange('telefono', e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
-                placeholder="+57 300 123 4567"
+                placeholder="999 999 999"
                 required
               />
             </div>
