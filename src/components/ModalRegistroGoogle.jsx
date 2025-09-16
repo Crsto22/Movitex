@@ -102,34 +102,253 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     // }
   };
 
+  // Función para renderizar el contenido del modal/drawer
+  const renderModalContent = () => (
+    <>
+      {/* Header del modal */}
+      <div className="relative p-4 md:p-6 border-b border-gray-100">
+        <div className="text-center">
+          <h2 
+            className="text-xl md:text-2xl font-bold text-gray-800 mb-2"
+            style={{ fontFamily: 'MusticaPro, sans-serif' }}
+          >
+            Completa tu registro
+          </h2>
+          <p className="text-sm text-gray-600">
+            Solo necesitamos algunos datos adicionales para completar tu cuenta
+          </p>
+          <p className="text-xs text-orange-600 mt-2 font-semibold">
+            * Debes completar todos los campos para continuar
+          </p>
+        </div>
+      </div>
+
+      {/* Formulario */}
+      <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 md:space-y-6">
+        {/* Fila 1: Número de documento y Teléfono */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Campo de documento */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="documento" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Número de Documento <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FileText size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="documento"
+                type="text"
+                value={formData.documento}
+                onChange={(e) => handleInputChange('documento', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+                placeholder="12345678"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Campo de teléfono */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="telefono" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Teléfono <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Phone size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="telefono"
+                type="tel"
+                value={formData.telefono}
+                onChange={(e) => handleInputChange('telefono', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+                placeholder="+57 300 123 4567"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Fila 2: Nombre y Apellido */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Campo de nombre */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="nombre" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Nombre <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="nombre"
+                type="text"
+                value={formData.nombre}
+                onChange={(e) => handleInputChange('nombre', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+                placeholder="Juan"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Campo de apellido */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="apellido" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Apellido <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="apellido"
+                type="text"
+                value={formData.apellido}
+                onChange={(e) => handleInputChange('apellido', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+                placeholder="Pérez"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Fila 3: Correo (columna completa, readonly) */}
+        <div className="space-y-2">
+          <label 
+            htmlFor="email" 
+            className="block text-sm font-semibold text-gray-700"
+            style={{ fontFamily: 'MusticaPro, sans-serif' }}
+          >
+            Correo Electrónico
+            <span className="text-sm text-gray-500 ml-2">(desde Google)</span>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail size={20} className="text-gray-400" />
+            </div>
+            <input
+              id="email"
+              type="email"
+              value={formData.email}
+              readOnly
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed text-base"
+              placeholder="tu@email.com"
+            />
+          </div>
+        </div>
+
+        {/* Mostrar foto de perfil si está disponible */}
+        {formData.foto_url && (
+          <div className="flex justify-center">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                Foto de perfil (desde Google)
+              </p>
+              <img 
+                src={formData.foto_url} 
+                alt="Foto de perfil" 
+                className="w-16 h-16 rounded-full border-2 border-gray-200 mx-auto"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Botón de completar registro */}
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
+            loading
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-[#f0251f] cursor-pointer hover:shadow-lg transform hover:scale-[1.02]'
+          } text-white`}
+          style={{ fontFamily: 'MusticaPro, sans-serif' }}
+        >
+          {loading ? 'Completando registro...' : 'Completar registro'}
+        </button>
+
+        {/* Nota informativa */}
+        <div className="text-center text-xs text-gray-500">
+          <p>Al completar el registro, aceptas nuestros términos y condiciones</p>
+          <p className="text-orange-600 font-semibold mt-1">
+            No podrás cerrar este modal hasta completar el registro
+          </p>
+        </div>
+      </form>
+    </>
+  );
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           onClick={handleBackdropClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
+          {/* Desktop: Modal centrado */}
           <motion.div 
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg"
-            initial={{ 
-              opacity: 0, 
-              scale: 0.8, 
-              y: 50 
-            }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1, 
-              y: 0 
-            }}
-            exit={{ 
-              opacity: 0, 
-              scale: 0.8, 
-              y: 50 
-            }}
+            className="hidden md:flex fixed inset-0 items-center justify-center p-4"
+            onClick={handleBackdropClick}
+          >
+            <motion.div 
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              initial={{ 
+                opacity: 0, 
+                scale: 0.8, 
+                y: 50 
+              }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: 0 
+              }}
+              exit={{ 
+                opacity: 0, 
+                scale: 0.8, 
+                y: 50 
+              }}
+              transition={{ 
+                type: "spring",
+                duration: 0.4,
+                damping: 25,
+                stiffness: 300
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Contenido del modal para desktop */}
+              {renderModalContent()}
+            </motion.div>
+          </motion.div>
+
+          {/* Mobile: Drawer desde abajo */}
+          <motion.div 
+            className="md:hidden fixed inset-x-0 bottom-0 top-20"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
             transition={{ 
               type: "spring",
               duration: 0.4,
@@ -137,195 +356,17 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
               stiffness: 300
             }}
           >
-            {/* Header del modal */}
-            <div className="relative p-6 border-b border-gray-100">
-              <div className="text-center">
-                <h2 
-                  className="text-2xl font-bold text-gray-800 mb-2"
-                  style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                >
-                  Completa tu registro
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Solo necesitamos algunos datos adicionales para completar tu cuenta
-                </p>
-                <p className="text-xs text-orange-600 mt-2 font-semibold">
-                  * Debes completar todos los campos para continuar
-                </p>
+            <div className="bg-white rounded-t-3xl shadow-2xl h-full flex flex-col">
+              {/* Handle para indicar que es draggable */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
+              </div>
+              
+              {/* Contenido del drawer para mobile */}
+              <div className="flex-1 overflow-y-auto">
+                {renderModalContent()}
               </div>
             </div>
-
-            {/* Formulario */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Fila 1: Número de documento y Teléfono */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Campo de documento */}
-                <div className="space-y-2">
-                  <label 
-                    htmlFor="documento" 
-                    className="block text-sm font-semibold text-gray-700"
-                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                  >
-                    Número de Documento <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FileText size={20} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="documento"
-                      type="text"
-                      value={formData.documento}
-                      onChange={(e) => handleInputChange('documento', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none"
-                      placeholder="12345678"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Campo de teléfono */}
-                <div className="space-y-2">
-                  <label 
-                    htmlFor="telefono" 
-                    className="block text-sm font-semibold text-gray-700"
-                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                  >
-                    Teléfono <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone size={20} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="telefono"
-                      type="tel"
-                      value={formData.telefono}
-                      onChange={(e) => handleInputChange('telefono', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none"
-                      placeholder="+57 300 123 4567"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fila 2: Nombre y Apellido */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Campo de nombre */}
-                <div className="space-y-2">
-                  <label 
-                    htmlFor="nombre" 
-                    className="block text-sm font-semibold text-gray-700"
-                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                  >
-                    Nombre <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={20} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="nombre"
-                      type="text"
-                      value={formData.nombre}
-                      onChange={(e) => handleInputChange('nombre', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none"
-                      placeholder="Juan"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Campo de apellido */}
-                <div className="space-y-2">
-                  <label 
-                    htmlFor="apellido" 
-                    className="block text-sm font-semibold text-gray-700"
-                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                  >
-                    Apellido <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={20} className="text-gray-400" />
-                    </div>
-                    <input
-                      id="apellido"
-                      type="text"
-                      value={formData.apellido}
-                      onChange={(e) => handleInputChange('apellido', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none"
-                      placeholder="Pérez"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fila 3: Correo (columna completa, readonly) */}
-              <div className="space-y-2">
-                <label 
-                  htmlFor="email" 
-                  className="block text-sm font-semibold text-gray-700"
-                  style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                >
-                  Correo Electrónico
-                  <span className="text-sm text-gray-500 ml-2">(desde Google)</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail size={20} className="text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    readOnly
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
-                    placeholder="tu@email.com"
-                  />
-                </div>
-              </div>
-
-              {/* Mostrar foto de perfil si está disponible */}
-              {formData.foto_url && (
-                <div className="flex justify-center">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-2" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                      Foto de perfil (desde Google)
-                    </p>
-                    <img 
-                      src={formData.foto_url} 
-                      alt="Foto de perfil" 
-                      className="w-16 h-16 rounded-full border-2 border-gray-200 mx-auto"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Botón de completar registro */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-3 px-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-[#f0251f] cursor-pointer hover:shadow-lg transform hover:scale-[1.02]'
-                } text-white`}
-                style={{ fontFamily: 'MusticaPro, sans-serif' }}
-              >
-                {loading ? 'Completando registro...' : 'Completar registro'}
-              </button>
-
-              {/* Nota informativa */}
-              <div className="text-center text-xs text-gray-500">
-                <p>Al completar el registro, aceptas nuestros términos y condiciones</p>
-                <p className="text-orange-600 font-semibold mt-1">
-                  No podrás cerrar este modal hasta completar el registro
-                </p>
-              </div>
-            </form>
           </motion.div>
         </motion.div>
       )}
