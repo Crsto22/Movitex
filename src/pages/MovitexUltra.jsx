@@ -215,8 +215,106 @@ const MovitexUltra = () => {
       {/* Franja de servicios */}
       <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#1C1A1A] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
-            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
+          <div className="relative bg-gradient-to-br from-[#1C1A1A] via-[#2a2626] to-[#1C1A1A] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 overflow-hidden">
+            {/* Fondo animado con ondas y puntos */}
+            <div className="absolute inset-0">
+              {/* Ondas de fondo */}
+              <div className="absolute inset-0">
+                <svg
+                  className="absolute bottom-0 left-0 w-full h-full"
+                  viewBox="0 0 800 200"
+                  preserveAspectRatio="none"
+                  fill="none"
+                >
+                  {/* Primera onda */}
+                  <path
+                    d="M0,80 C200,60 250,100 400,90 C550,80 600,60 800,70 L800,200 L0,200 Z"
+                    fill="rgba(240, 37, 31, 0.15)"
+                    className="animate-pulse"
+                  />
+                  {/* Segunda onda */}
+                  <path
+                    d="M0,120 C180,100 280,140 480,130 C680,120 720,100 800,110 L800,200 L0,200 Z"
+                    fill="rgba(240, 37, 31, 0.2)"
+                  />
+                  {/* Tercera onda */}
+                  <path
+                    d="M0,150 C150,130 350,170 600,160 C750,150 780,130 800,140 L800,200 L0,200 Z"
+                    fill="rgba(240, 37, 31, 0.1)"
+                  />
+                </svg>
+              </div>
+
+              {/* Puntos decorativos animados */}
+              <div className="absolute inset-0 overflow-hidden">
+                {/* Punto 1 */}
+                <div 
+                  className="absolute w-2 h-2 bg-[#f0251f] rounded-full opacity-70 animate-pulse"
+                  style={{ 
+                    top: '20%', 
+                    right: '15%',
+                    animationDelay: '0s',
+                    animationDuration: '2s'
+                  }}
+                />
+                {/* Punto 2 */}
+                <div 
+                  className="absolute w-1.5 h-1.5 bg-white rounded-full opacity-50 animate-pulse"
+                  style={{ 
+                    top: '30%', 
+                    right: '25%',
+                    animationDelay: '0.5s',
+                    animationDuration: '3s'
+                  }}
+                />
+                {/* Punto 3 */}
+                <div 
+                  className="absolute w-3 h-3 bg-[#f0251f] rounded-full opacity-60 animate-pulse"
+                  style={{ 
+                    top: '15%', 
+                    right: '80%',
+                    animationDelay: '1s',
+                    animationDuration: '2.5s'
+                  }}
+                />
+                {/* Punto 4 */}
+                <div 
+                  className="absolute w-1 h-1 bg-white rounded-full opacity-60 animate-pulse"
+                  style={{ 
+                    top: '40%', 
+                    right: '35%',
+                    animationDelay: '1.5s',
+                    animationDuration: '2s'
+                  }}
+                />
+                {/* Punto 5 */}
+                <div 
+                  className="absolute w-2.5 h-2.5 bg-[#f0251f] rounded-full opacity-55 animate-pulse"
+                  style={{ 
+                    top: '60%', 
+                    right: '70%',
+                    animationDelay: '0.8s',
+                    animationDuration: '3.5s'
+                  }}
+                />
+                {/* Punto 6 */}
+                <div 
+                  className="absolute w-1.5 h-1.5 bg-[#f0251f] rounded-full opacity-40 animate-pulse"
+                  style={{ 
+                    top: '50%', 
+                    right: '45%',
+                    animationDelay: '2s',
+                    animationDuration: '4s'
+                  }}
+                />
+              </div>
+
+              {/* Gradiente overlay para mejor legibilidad */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1C1A1A] via-transparent to-transparent opacity-40" />
+            </div>
+
+            {/* Contenido principal con z-index relativo */}
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
               <div className="flex flex-col items-center text-center">
                 <Layers size={32} className="sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white mb-2 sm:mb-3 lg:mb-4" />
                 <p className="text-white font-medium text-xs sm:text-sm leading-tight" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
