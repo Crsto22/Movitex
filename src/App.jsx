@@ -33,9 +33,9 @@ function App() {
         
         {/* Toaster para notificaciones */}
         <Toaster 
-          position="top-center"
+          position="bottom-center"
           toastOptions={{
-            duration: 4000,
+            duration: 2000,
           }}
         />
       </Router>

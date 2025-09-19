@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, User, Phone, FileText, Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { CSSTransition } from 'react-transition-group';
+import { X, User, Phone, FileText, Mail, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDNIData, validateDNI } from '../services/dniService';
 import toast from 'react-hot-toast';
@@ -16,6 +16,11 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     email: '',
     foto_url: ''
   });
+
+  // Referencias para evitar findDOMNode
+  const backdropRef = useRef(null);
+  const desktopModalRef = useRef(null);
+  const mobileModalRef = useRef(null);
 
   // Prellenar datos desde Google cuando se abre el modal
   useEffect(() => {
@@ -355,79 +360,122 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
   );
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div 
+    <>
+      {/* Estilos CSS para las animaciones */}
+      <style jsx>{`
+        /* Backdrop transitions */
+        .modal-backdrop-enter {
+          opacity: 0;
+        }
+        .modal-backdrop-enter-active {
+          opacity: 1;
+          transition: opacity 300ms ease-out;
+        }
+        .modal-backdrop-exit {
+          opacity: 1;
+        }
+        .modal-backdrop-exit-active {
+          opacity: 0;
+          transition: opacity 300ms ease-out;
+        }
+
+        /* Desktop modal transitions */
+        .modal-desktop-enter {
+          opacity: 0;
+          transform: scale(0.8) translateY(50px);
+        }
+        .modal-desktop-enter-active {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+          transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-desktop-exit {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+        .modal-desktop-exit-active {
+          opacity: 0;
+          transform: scale(0.8) translateY(50px);
+          transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Mobile drawer transitions */
+        .modal-mobile-enter {
+          transform: translateY(100%);
+        }
+        .modal-mobile-enter-active {
+          transform: translateY(0);
+          transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-mobile-exit {
+          transform: translateY(0);
+        }
+        .modal-mobile-exit-active {
+          transform: translateY(100%);
+          transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+      `}</style>
+      
+      <CSSTransition
+        in={isOpen}
+        timeout={300}
+        classNames="modal-backdrop"
+        unmountOnExit
+        nodeRef={backdropRef}
+      >
+        <div 
+          ref={backdropRef}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           onClick={handleBackdropClick}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
         >
           {/* Desktop: Modal centrado */}
-          <motion.div 
+          <div 
             className="hidden md:flex fixed inset-0 items-center justify-center p-4"
             onClick={handleBackdropClick}
           >
-            <motion.div 
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-              initial={{ 
-                opacity: 0, 
-                scale: 0.8, 
-                y: 50 
-              }}
-              animate={{ 
-                opacity: 1, 
-                scale: 1, 
-                y: 0 
-              }}
-              exit={{ 
-                opacity: 0, 
-                scale: 0.8, 
-                y: 50 
-              }}
-              transition={{ 
-                type: "spring",
-                duration: 0.4,
-                damping: 25,
-                stiffness: 300
-              }}
-              onClick={(e) => e.stopPropagation()}
+            <CSSTransition
+              in={isOpen}
+              timeout={400}
+              classNames="modal-desktop"
+              unmountOnExit
+              nodeRef={desktopModalRef}
             >
-              {/* Contenido del modal para desktop */}
-              {renderModalContent()}
-            </motion.div>
-          </motion.div>
-
-          {/* Mobile: Drawer desde abajo */}
-          <motion.div 
-            className="md:hidden fixed inset-x-0 bottom-0 top-20"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ 
-              type: "spring",
-              duration: 0.4,
-              damping: 25,
-              stiffness: 300
-            }}
-          >
-            <div className="bg-white rounded-t-3xl shadow-2xl h-full flex flex-col">
-              {/* Handle para indicar que es draggable */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
-              </div>
-              
-              {/* Contenido del drawer para mobile */}
-              <div className="flex-1 overflow-y-auto">
+              <div 
+                ref={desktopModalRef}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Contenido del modal para desktop */}
                 {renderModalContent()}
               </div>
+            </CSSTransition>
+          </div>
+
+          {/* Mobile: Drawer desde abajo */}
+          <CSSTransition
+            in={isOpen}
+            timeout={400}
+            classNames="modal-mobile"
+            unmountOnExit
+            nodeRef={mobileModalRef}
+          >
+            <div ref={mobileModalRef} className="md:hidden fixed inset-x-0 bottom-0 top-20">
+              <div className="bg-white rounded-t-3xl shadow-2xl h-full flex flex-col">
+                {/* Handle para indicar que es draggable */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
+                </div>
+                
+                {/* Contenido del drawer para mobile */}
+                <div className="flex-1 overflow-y-auto">
+                  {renderModalContent()}
+                </div>
+              </div>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </CSSTransition>
+        </div>
+      </CSSTransition>
+    </>
   );
 };
 
