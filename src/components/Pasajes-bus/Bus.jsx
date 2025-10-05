@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Lottie from 'lottie-react'
+import { X } from 'lucide-react'
 import asientosDisponibles from '../../assets/icons/asientos-disponibles.svg'
 import timon from '../../assets/icons/icon-timon.png'
 import asientosSeleccionados from '../../assets/icons/asientos-seleccionados.svg'
@@ -339,7 +340,7 @@ function Bus({ idViaje = null }) {
               {/* Número del asiento */}
               <div 
                 className={`absolute text-xs flex items-center justify-center w-10 h-7 z-10 pointer-events-none ${
-                  seat.status === 'selected' ? 'text-white' : 'text-gray-700'
+                  seat.status === 'selected' ? 'text-white' : seat.status === 'occupied' ? 'text-gray-400' : 'text-gray-700'
                 }`}
                 style={{ 
                   top: `${seat.topPosSeat * 0.25}rem`, 
@@ -352,22 +353,24 @@ function Bus({ idViaje = null }) {
               
               {/* Imagen del asiento clickeable */}
               <img 
-                src={seat.status === 'selected' ? asientosSeleccionados : asientosDisponibles} 
+                src={seat.status === 'selected' ? asientosSeleccionados : 
+                     seat.status === 'occupied' ? asientosOcupados : asientosDisponibles} 
                 alt={`Asiento ${seat.number}`} 
-                className={`w-10 h-10 absolute cursor-pointer transition-all duration-200 ${
-                  seat.status === 'occupied' ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-75'
+                className={`w-10 h-10 absolute transition-all duration-200 ${
+                  seat.status === 'occupied' ? 'opacity-30 cursor-no-drop' : 'cursor-pointer hover:opacity-75'
                 }`}
                 style={{ 
                   top: `${seat.topPosSeat * 0.25}rem`, 
                   left: `${seat.leftPos * 0.25}rem` 
                 }}
                 onClick={() => seat.status !== 'occupied' && handleSeatClick(seat.id)}
-                onMouseEnter={() => setHoveredSeat(seat)}
+                onMouseEnter={() => seat.status !== 'occupied' && setHoveredSeat(seat)}
                 onMouseLeave={() => setHoveredSeat(null)}
               />
-              
-              {/* Tooltip */}
-              {hoveredSeat && hoveredSeat.id === seat.id && (
+
+            
+              {/* Tooltip - Solo para asientos disponibles y seleccionados */}
+              {hoveredSeat && hoveredSeat.id === seat.id && seat.status !== 'occupied' && (
                 <div
                   className="absolute bg-[#fab926] text-white text-xs sm:text-sm rounded-lg px-2 py-1 sm:px-3 sm:py-2 z-20 shadow-lg whitespace-nowrap"
                   style={{
