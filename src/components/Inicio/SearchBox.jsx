@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCiudades } from '../../context/CiudadesContext';
+import { toast } from 'react-hot-toast';
 
 const SearchBox = () => {
+  const navigate = useNavigate();
+  
   const [searchData, setSearchData] = useState({
     origen: '',
     destino: '',
@@ -8,12 +13,8 @@ const SearchBox = () => {
     retorno: ''
   });
 
-  // Lista de ciudades populares para el autocompletado
-  const ciudades = [
-    'Lima', 'Arequipa', 'Cusco', 'Trujillo', 'Chiclayo', 'Piura', 'Iquitos',
-    'Huancayo', 'Pucallpa', 'Tacna', 'Ica', 'Chimbote', 'Huánuco', 'Ayacucho',
-    'Cajamarca', 'Puno', 'Abancay', 'Moquegua', 'Tumbes', 'Cerro de Pasco'
-  ];
+  // Obtener ciudades del contexto
+  const { ciudades, loading: ciudadesLoading, searchCiudadesByName } = useCiudades();
 
   const [filteredOrigen, setFilteredOrigen] = useState([]);
   const [filteredDestino, setFilteredDestino] = useState([]);
@@ -31,6 +32,10 @@ const SearchBox = () => {
   // Referencias
   const containerRef = useRef(null);
   const calendarRef = useRef(null);
+  const origenDesktopRef = useRef(null);
+  const destinoDesktopRef = useRef(null);
+  const origenMobileRef = useRef(null);
+  const destinoMobileRef = useRef(null);
   const salidaDesktopRef = useRef(null);
   const retornoDesktopRef = useRef(null);
   const salidaMobileRef = useRef(null);
@@ -42,20 +47,38 @@ const SearchBox = () => {
       [field]: value
     }));
 
-    // Filtrar ciudades para autocompletado
+    // Filtrar ciudades para autocompletado usando el contexto
     if (field === 'origen') {
-      const filtered = ciudades.filter(ciudad => 
-        ciudad.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = searchCiudadesByName(value);
       setFilteredOrigen(filtered);
-      setShowOrigenSuggestions(value.length > 0 && filtered.length > 0);
+      setShowOrigenSuggestions(filtered.length > 0);
     } else if (field === 'destino') {
-      const filtered = ciudades.filter(ciudad => 
-        ciudad.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = searchCiudadesByName(value);
       setFilteredDestino(filtered);
-      setShowDestinoSuggestions(value.length > 0 && filtered.length > 0);
+      setShowDestinoSuggestions(filtered.length > 0);
     }
+  };
+
+  // Función para mostrar todas las ciudades cuando se hace focus
+  const handleFocus = (field) => {
+    if (field === 'origen') {
+      setFilteredOrigen(ciudades);
+      setShowOrigenSuggestions(ciudades.length > 0);
+    } else if (field === 'destino') {
+      setFilteredDestino(ciudades);
+      setShowDestinoSuggestions(ciudades.length > 0);
+    }
+  };
+
+  // Función para manejar cuando el usuario sale del input
+  const handleBlur = (field) => {
+    setTimeout(() => {
+      if (field === 'origen') {
+        setShowOrigenSuggestions(false);
+      } else if (field === 'destino') {
+        setShowDestinoSuggestions(false);
+      }
+    }, 200);
   };
 
   const selectCiudad = (field, ciudad) => {
@@ -67,33 +90,119 @@ const SearchBox = () => {
     if (field === 'origen') {
       setShowOrigenSuggestions(false);
       setFilteredOrigen([]);
+      
+      // Enfocar automáticamente el input de destino
+      setTimeout(() => {
+        // Detectar si estamos en mobile o desktop
+        const isMobile = window.innerWidth < 768; // md breakpoint de Tailwind
+        if (isMobile) {
+          destinoMobileRef.current?.focus();
+        } else {
+          destinoDesktopRef.current?.focus();
+        }
+      }, 100);
+      
     } else if (field === 'destino') {
       setShowDestinoSuggestions(false);
       setFilteredDestino([]);
+      
+      // Enfocar automáticamente el input de fecha de salida
+      setTimeout(() => {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          // En mobile, abrir el calendario directamente
+          openCalendar('salida', true);
+        } else {
+          // En desktop, abrir el calendario
+          openCalendar('salida', false);
+        }
+      }, 100);
     }
   };
 
+  // Función para validar si una ciudad existe en la lista
+  const isCiudadValida = (ciudadNombre) => {
+    if (!ciudadNombre || !ciudadNombre.trim()) return false;
+    return ciudades.some(ciudad => 
+      ciudad.nombre.toLowerCase().trim() === ciudadNombre.toLowerCase().trim()
+    );
+  };
+
   const handleSearch = () => {
-    console.log('Búsqueda realizada:', searchData);
+    console.log('🚀 Función handleSearch ejecutada');
+    console.log('📊 Datos de búsqueda:', searchData);
     
     // Validar que los campos obligatorios estén llenos
-    if (!searchData.origen.trim()) {
-      alert('Por favor, ingrese la ciudad de origen');
+    if (!searchData.origen.trim() || !searchData.destino.trim()) {
+      toast.error('Debes ingresar ciudad de origen y destino');
       return;
     }
     
-    if (!searchData.destino.trim()) {
-      alert('Por favor, ingrese la ciudad de destino');
+    // Validar que las ciudades sean válidas (existan en la lista)
+    if (!isCiudadValida(searchData.origen)) {
+      toast.error('Debes seleccionar una ciudad válida de la lista');
+      return;
+    }
+    
+    if (!isCiudadValida(searchData.destino)) {
+      toast.error('Debes seleccionar una ciudad válida de la lista');
+      return;
+    }
+    
+    // Validar que no sean la misma ciudad
+    if (searchData.origen.trim().toLowerCase() === searchData.destino.trim().toLowerCase()) {
+      toast.error('No puedes seleccionar la misma ciudad para origen y destino');
       return;
     }
 
     if (!searchData.salida) {
-      alert('Por favor, seleccione la fecha de salida');
+      toast.error('Por favor, seleccione la fecha de salida');
       return;
     }
 
-    // Aquí iría la lógica de búsqueda real
-    alert(`Buscando viajes de ${searchData.origen} a ${searchData.destino} para el ${formatDate(searchData.salida)}${searchData.retorno ? ' con retorno el ' + formatDate(searchData.retorno) : ''}`);
+    console.log('✅ Validaciones pasadas');
+
+    // Construir la URL de navegación
+    const origen = searchData.origen.toLowerCase().replace(/\s+/g, '-');
+    const destino = searchData.destino.toLowerCase().replace(/\s+/g, '-');
+    
+    console.log('🏙️ Origen procesado:', origen);
+    console.log('🎯 Destino procesado:', destino);
+    
+    // Formatear fecha para URL (dd-mm-yyyy)
+    const formatDateForURL = (dateString) => {
+      const [year, month, day] = dateString.split('-');
+      return `${day}-${month}-${year}`;
+    };
+
+    const fechaSalida = formatDateForURL(searchData.salida);
+    console.log('📅 Fecha salida formateada:', fechaSalida);
+    
+    // Construir parámetros de query
+    const queryParams = new URLSearchParams();
+    queryParams.append('fecha_salida', fechaSalida);
+    
+    // Solo agregar fecha de retorno si fue seleccionada
+    if (searchData.retorno) {
+      const fechaRetorno = formatDateForURL(searchData.retorno);
+      queryParams.append('fecha_retorno', fechaRetorno);
+      console.log('🔄 Fecha retorno formateada:', fechaRetorno);
+    }
+
+    // Construir URL completa
+    const url = `/pasajes-bus/${origen}/${destino}?${queryParams.toString()}`;
+    
+    console.log('🌐 URL construida:', url);
+    console.log('🚀 Iniciando navegación...');
+    
+    // Navegar a la página de resultados
+    try {
+      navigate(url);
+      console.log('✅ Navigate ejecutado');
+    } catch (error) {
+      console.error('❌ Error en navigate:', error);
+      toast.error('Error al realizar la búsqueda. Inténtalo nuevamente.');
+    }
   };
 
   // Formatear fecha para mostrar sin problemas de zona horaria
@@ -291,15 +400,16 @@ const SearchBox = () => {
             <div className="flex items-center bg-gray-50 rounded-xl px-4 py-3 border-2 border-gray-200 focus-within:border-[#f0251f] transition-all duration-200 hover:border-gray-300">
               <svg className="w-5 h-5 text-[#f0251f] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 01616 0z" />
               </svg>
               <input
+                ref={origenDesktopRef}
                 type="text"
                 placeholder="Ingresa una ciudad"
                 value={searchData.origen}
                 onChange={(e) => handleInputChange('origen', e.target.value)}
-                onFocus={() => setShowOrigenSuggestions(searchData.origen.length > 0 && filteredOrigen.length > 0)}
-                onBlur={() => setTimeout(() => setShowOrigenSuggestions(false), 200)}
+                onFocus={() => handleFocus('origen')}
+                onBlur={() => handleBlur('origen')}
                 className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 font-medium"
               />
             </div>
@@ -307,18 +417,18 @@ const SearchBox = () => {
             {/* Sugerencias de origen */}
             {showOrigenSuggestions && (
               <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-200 rounded-xl shadow-xl mt-2 z-50 max-h-48 overflow-y-auto">
-                {filteredOrigen.slice(0, 6).map((ciudad, index) => (
+                {filteredOrigen.slice(0, 8).map((ciudad) => (
                   <button
-                    key={index}
-                    onClick={() => selectCiudad('origen', ciudad)}
+                    key={ciudad.id_ciudad}
+                    onClick={() => selectCiudad('origen', ciudad.nombre)}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 hover:text-[#f0251f] text-gray-700 font-medium transition-all duration-200 first:rounded-t-xl last:rounded-b-xl border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex items-center">
                       <svg className="w-4 h-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
                       </svg>
-                      {ciudad}
+                      {ciudad.nombre}
                     </div>
                   </button>
                 ))}
@@ -332,15 +442,16 @@ const SearchBox = () => {
             <div className="flex items-center bg-gray-50 rounded-xl px-4 py-3 border-2 border-gray-200 focus-within:border-[#f0251f] transition-all duration-200 hover:border-gray-300">
               <svg className="w-5 h-5 text-[#f0251f] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 01616 0z" />
               </svg>
               <input
+                ref={destinoDesktopRef}
                 type="text"
                 placeholder="Ingresa el destino"
                 value={searchData.destino}
                 onChange={(e) => handleInputChange('destino', e.target.value)}
-                onFocus={() => setShowDestinoSuggestions(searchData.destino.length > 0 && filteredDestino.length > 0)}
-                onBlur={() => setTimeout(() => setShowDestinoSuggestions(false), 200)}
+                onFocus={() => handleFocus('destino')}
+                onBlur={() => handleBlur('destino')}
                 className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 font-medium"
               />
             </div>
@@ -348,18 +459,18 @@ const SearchBox = () => {
             {/* Sugerencias de destino */}
             {showDestinoSuggestions && (
               <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-200 rounded-xl shadow-xl mt-2 z-50 max-h-48 overflow-y-auto">
-                {filteredDestino.slice(0, 6).map((ciudad, index) => (
+                {filteredDestino.slice(0, 8).map((ciudad) => (
                   <button
-                    key={index}
-                    onClick={() => selectCiudad('destino', ciudad)}
+                    key={ciudad.id_ciudad}
+                    onClick={() => selectCiudad('destino', ciudad.nombre)}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 hover:text-[#f0251f] text-gray-700 font-medium transition-all duration-200 first:rounded-t-xl last:rounded-b-xl border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex items-center">
                       <svg className="w-4 h-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
                       </svg>
-                      {ciudad}
+                      {ciudad.nombre}
                     </div>
                   </button>
                 ))}
@@ -409,7 +520,12 @@ const SearchBox = () => {
 
           {/* Botón de búsqueda */}
           <button
-            onClick={handleSearch}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('🖱️ Botón de búsqueda clickeado');
+              handleSearch();
+            }}
             className="bg-[#f0251f] hover:bg-[#d01f1b] transition-all duration-200 rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,15 +544,16 @@ const SearchBox = () => {
               <div className="flex items-center bg-gray-50 rounded-lg px-3 py-3 border-2 border-gray-200 focus-within:border-[#f0251f] transition-all duration-200">
                 <svg className="w-4 h-4 text-[#f0251f] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 01616 0z" />
                 </svg>
                 <input
+                  ref={origenMobileRef}
                   type="text"
                   placeholder="Ciudad origen"
                   value={searchData.origen}
                   onChange={(e) => handleInputChange('origen', e.target.value)}
-                  onFocus={() => setShowOrigenSuggestions(searchData.origen.length > 0 && filteredOrigen.length > 0)}
-                  onBlur={() => setTimeout(() => setShowOrigenSuggestions(false), 200)}
+                  onFocus={() => handleFocus('origen')}
+                  onBlur={() => handleBlur('origen')}
                   className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm font-medium"
                 />
               </div>
@@ -444,10 +561,10 @@ const SearchBox = () => {
               {/* Sugerencias origen mobile */}
               {showOrigenSuggestions && (
                 <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-200 rounded-lg shadow-xl mt-2 z-50 max-h-40 overflow-y-auto">
-                  {filteredOrigen.slice(0, 4).map((ciudad, index) => (
+                  {filteredOrigen.slice(0, 6).map((ciudad) => (
                     <button
-                      key={index}
-                      onClick={() => selectCiudad('origen', ciudad)}
+                      key={ciudad.id_ciudad}
+                      onClick={() => selectCiudad('origen', ciudad.nombre)}
                       className="w-full text-left px-3 py-2.5 hover:bg-gray-50 hover:text-[#f0251f] text-gray-700 text-sm font-medium transition-all duration-200 first:rounded-t-lg last:rounded-b-lg border-b border-gray-100 last:border-b-0"
                     >
                       <div className="flex items-center">
@@ -455,7 +572,7 @@ const SearchBox = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
                         </svg>
-                        {ciudad}
+                        {ciudad.nombre}
                       </div>
                     </button>
                   ))}
@@ -469,15 +586,16 @@ const SearchBox = () => {
               <div className="flex items-center bg-gray-50 rounded-lg px-3 py-3 border-2 border-gray-200 focus-within:border-[#f0251f] transition-all duration-200">
                 <svg className="w-4 h-4 text-[#f0251f] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 01616 0z" />
                 </svg>
                 <input
+                  ref={destinoMobileRef}
                   type="text"
                   placeholder="Ciudad destino"
                   value={searchData.destino}
                   onChange={(e) => handleInputChange('destino', e.target.value)}
-                  onFocus={() => setShowDestinoSuggestions(searchData.destino.length > 0 && filteredDestino.length > 0)}
-                  onBlur={() => setTimeout(() => setShowDestinoSuggestions(false), 200)}
+                  onFocus={() => handleFocus('destino')}
+                  onBlur={() => handleBlur('destino')}
                   className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm font-medium"
                 />
               </div>
@@ -485,10 +603,10 @@ const SearchBox = () => {
               {/* Sugerencias destino mobile */}
               {showDestinoSuggestions && (
                 <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-200 rounded-lg shadow-xl mt-2 z-50 max-h-40 overflow-y-auto">
-                  {filteredDestino.slice(0, 4).map((ciudad, index) => (
+                  {filteredDestino.slice(0, 6).map((ciudad) => (
                     <button
-                      key={index}
-                      onClick={() => selectCiudad('destino', ciudad)}
+                      key={ciudad.id_ciudad}
+                      onClick={() => selectCiudad('destino', ciudad.nombre)}
                       className="w-full text-left px-3 py-2.5 hover:bg-gray-50 hover:text-[#f0251f] text-gray-700 text-sm font-medium transition-all duration-200 first:rounded-t-lg last:rounded-b-lg border-b border-gray-100 last:border-b-0"
                     >
                       <div className="flex items-center">
@@ -496,7 +614,7 @@ const SearchBox = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 616 0z" />
                         </svg>
-                        {ciudad}
+                        {ciudad.nombre}
                       </div>
                     </button>
                   ))}
@@ -545,7 +663,12 @@ const SearchBox = () => {
           {/* Botón de búsqueda centrado */}
           <div className="flex justify-center pt-2">
             <button
-              onClick={handleSearch}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('🖱️ Botón móvil de búsqueda clickeado');
+                handleSearch();
+              }}
               className="bg-[#f0251f] hover:bg-[#d01f1b] transition-all duration-200 rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             >
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
