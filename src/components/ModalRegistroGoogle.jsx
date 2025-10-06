@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { X, User, Phone, FileText, Mail, Search } from 'lucide-react';
+import { X, User, Phone, FileText, Mail, Search, Calendar, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDNIData, validateDNI } from '../services/dniService';
 import toast from 'react-hot-toast';
@@ -14,7 +14,9 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     nombre: '',
     apellido: '',
     email: '',
-    foto_url: ''
+    foto_url: '',
+    fecha_nacimiento: '',
+    genero: ''
   });
 
   // Referencias para evitar findDOMNode
@@ -37,7 +39,9 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
         nombre: firstName,
         apellido: lastName,
         email: user.email || '',
-        foto_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || ''
+        foto_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+        fecha_nacimiento: '',
+        genero: ''
       });
     }
   }, [isOpen, user, userData]);
@@ -117,6 +121,16 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     
     if (!formData.apellido.trim()) {
       toast.error('El apellido es requerido');
+      return;
+    }
+    
+    if (!formData.fecha_nacimiento.trim()) {
+      toast.error('La fecha de nacimiento es requerida');
+      return;
+    }
+    
+    if (!formData.genero.trim()) {
+      toast.error('El género es requerido');
       return;
     }
 
@@ -315,6 +329,62 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed text-base"
               placeholder="tu@email.com"
             />
+          </div>
+        </div>
+
+        {/* Fila 4: Fecha de nacimiento y Género */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Campo de fecha de nacimiento */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="fecha_nacimiento" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Fecha de Nacimiento <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Calendar size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="fecha_nacimiento"
+                type="date"
+                value={formData.fecha_nacimiento}
+                onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Campo de género */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="genero" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Género <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Users size={20} className="text-gray-400" />
+              </div>
+              <select
+                id="genero"
+                value={formData.genero}
+                onChange={(e) => handleInputChange('genero', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base appearance-none bg-white"
+                required
+              >
+                <option value="">Seleccionar género</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+                <option value="otro">Otro</option>
+                <option value="prefiero_no_decir">Prefiero no decir</option>
+              </select>
+            </div>
           </div>
         </div>
 

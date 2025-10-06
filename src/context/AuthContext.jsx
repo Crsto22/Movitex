@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      const { documento, telefono, nombre, apellido, email, password } = userData;
+      const { documento, telefono, nombre, apellido, email, password, fecha_nacimiento, genero } = userData;
 
       // Paso 1: Crear usuario en Supabase Auth con confirmación de email
       const signUpOptions = {
@@ -91,8 +91,10 @@ export const AuthProvider = ({ children }) => {
             dni: documento,
             correo: email,
             telefono: telefono,
-            foto_url: null, // Como se especifica, se guarda como null
-            fecha_creacion: new Date().toISOString() // Fecha local del cliente
+            foto_url: null,
+            fecha_creacion: new Date().toISOString(),
+            fecha_nacimiento: fecha_nacimiento || null,
+            genero: genero || null
           }
         ]);
 
@@ -306,7 +308,9 @@ export const AuthProvider = ({ children }) => {
         .update({
           nombre: updatedData.nombre,
           apellido: updatedData.apellido,
-          telefono: updatedData.telefono
+          telefono: updatedData.telefono,
+          fecha_nacimiento: updatedData.fecha_nacimiento || null,
+          genero: updatedData.genero || null
         })
         .eq('id_usuario', userId)
         .select()
@@ -528,6 +532,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: 'Error al actualizar foto' };
     }
   };
+
   // Función para crear usuario en DB después de OAuth (Google)
   const createUserFromOAuth = async (user) => {
     try {
@@ -584,11 +589,13 @@ export const AuthProvider = ({ children }) => {
             id_usuario: user.id,
             nombre: user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name || 'Usuario',
             apellido: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 'Google',
-            dni: 'GOOGLE_' + user.id.substring(0, 8), // DNI temporal único para usuarios de Google
+            dni: 'GOOGLE_' + user.id.substring(0, 8),
             correo: user.email,
-            telefono: 'GOOGLE_' + user.id.substring(0, 8), // Teléfono temporal único
+            telefono: 'GOOGLE_' + user.id.substring(0, 8),
             foto_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-            fecha_creacion: new Date().toISOString()
+            fecha_creacion: new Date().toISOString(),
+            fecha_nacimiento: null,
+            genero: null
           }
         ])
         .select()
@@ -598,12 +605,12 @@ export const AuthProvider = ({ children }) => {
         throw insertError;
       }
 
-      console.log('🆕 Nuevo usuario Google creado con foto actualizada');
+      console.log('🆕 Nuevo usuario Google creado');
 
       return {
         success: true,
         userData: newUser,
-        needsCompletion: true // Usuario nuevo necesita completar datos
+        needsCompletion: true
       };
 
     } catch (error) {
@@ -628,7 +635,9 @@ export const AuthProvider = ({ children }) => {
           apellido: completeData.apellido,
           dni: completeData.documento,
           telefono: completeData.telefono,
-          foto_url: completeData.foto_url || null
+          foto_url: completeData.foto_url || null,
+          fecha_nacimiento: completeData.fecha_nacimiento || null,
+          genero: completeData.genero || null
         })
         .eq('id_usuario', userId)
         .select()
@@ -642,7 +651,7 @@ export const AuthProvider = ({ children }) => {
       setUserData(data);
       saveUserDataToStorage(data);
 
-      console.log('✅ Registro de Google completado con foto actualizada');
+      console.log('✅ Registro de Google completado');
 
       return {
         success: true,

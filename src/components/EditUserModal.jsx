@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { X, User, Phone, FileText, Mail } from 'lucide-react';
+import { X, User, Phone, FileText, Mail, Calendar, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -9,7 +9,9 @@ const EditUserModal = ({ isOpen, onClose, userData }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
-    telefono: ''
+    telefono: '',
+    fecha_nacimiento: '',
+    genero: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +25,9 @@ const EditUserModal = ({ isOpen, onClose, userData }) => {
       setFormData({
         nombre: userData.nombre || '',
         apellido: userData.apellido || '',
-        telefono: userData.telefono || ''
+        telefono: userData.telefono || '',
+        fecha_nacimiento: userData.fecha_nacimiento || '',
+        genero: userData.genero || ''
       });
     }
   }, [isOpen, userData]);
@@ -307,6 +311,62 @@ const EditUserModal = ({ isOpen, onClose, userData }) => {
                       maxLength={20}
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Fila 4: Fecha de nacimiento y Género */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Campo de fecha de nacimiento */}
+                  <div className="space-y-2">
+                    <label 
+                      htmlFor="fecha_nacimiento" 
+                      className="block text-sm font-semibold text-gray-700"
+                      style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                    >
+                      Fecha de Nacimiento
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Calendar size={20} className="text-gray-400" />
+                      </div>
+                      <input
+                        id="fecha_nacimiento"
+                        type="date"
+                        value={formData.fecha_nacimiento}
+                        onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Campo de género */}
+                  <div className="space-y-2">
+                    <label 
+                      htmlFor="genero" 
+                      className="block text-sm font-semibold text-gray-700"
+                      style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                    >
+                      Género
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Users size={20} className="text-gray-400" />
+                      </div>
+                      <select
+                        id="genero"
+                        value={formData.genero}
+                        onChange={(e) => handleInputChange('genero', e.target.value)}
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none appearance-none bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Seleccionar género</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                        <option value="otro">Otro</option>
+                        <option value="prefiero_no_decir">Prefiero no decir</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

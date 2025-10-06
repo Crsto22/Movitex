@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText, Search } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText, Search, Calendar, Users } from 'lucide-react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../context/AuthContext';
 import { getDNIData, validateDNI } from '../services/dniService';
@@ -14,7 +14,9 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     nombre: '',
     apellido: '',
     email: '',
-    password: ''
+    password: '',
+    fecha_nacimiento: '',
+    genero: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState();
@@ -384,6 +386,60 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
                 <Eye size={20} className="text-gray-400 hover:text-gray-600 transition-colors duration-200" />
               )}
             </button>
+          </div>
+        </div>
+
+        {/* Fila 5: Fecha de nacimiento y Género */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Campo de fecha de nacimiento */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="fecha_nacimiento" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Fecha de Nacimiento
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Calendar size={20} className="text-gray-400" />
+              </div>
+              <input
+                id="fecha_nacimiento"
+                type="date"
+                value={formData.fecha_nacimiento}
+                onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+              />
+            </div>
+          </div>
+
+          {/* Campo de género */}
+          <div className="space-y-2">
+            <label 
+              htmlFor="genero" 
+              className="block text-sm font-semibold text-gray-700"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              Género
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Users size={20} className="text-gray-400" />
+              </div>
+              <select
+                id="genero"
+                value={formData.genero}
+                onChange={(e) => handleInputChange('genero', e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base appearance-none bg-white"
+              >
+                <option value="">Seleccionar género</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+                <option value="otro">Otro</option>
+                <option value="prefiero_no_decir">Prefiero no decir</option>
+              </select>
+            </div>
           </div>
         </div>
 
