@@ -276,6 +276,14 @@ const PasajesBus = () => {
     if (origen && destino && fechaSalidaParam) {
       const fechaConvertida = convertirFecha(fechaSalidaParam);
       if (fechaConvertida) {
+        // Guardar datos de búsqueda en sessionStorage
+        const datosBusqueda = {
+          ciudadOrigen: origen,
+          ciudadDestino: destino,
+          fecha: fechaConvertida
+        };
+        sessionStorage.setItem('busqueda_viajes', JSON.stringify(datosBusqueda));
+        
         // Limpiar resultados anteriores antes de la nueva búsqueda
         // Esto asegura que el usuario vea el loading inmediatamente
         buscarViajes(origen, destino, fechaConvertida);

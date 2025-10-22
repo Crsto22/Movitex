@@ -1,196 +1,96 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Navbar from '../components/Reserva/Navbar';
-import { getDNIData, validateDNI } from '../services/dniService';
-
+import { useReserva } from '../context/ReservaContext';
+import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
+import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
+import MovitexUltraFont from '../assets/services/MovitexUltra/MovitexUltra-Font.png';
 const Reserva = () => {
-  const [pasajeros, setPasajeros] = useState([
-    {
-      id: 1,
-      asiento: '30',
-      numeroDocumento: '75132058',
-      nombre: 'Cristhofer',
-      apellido: 'Leonardo',
-      fechaNacimiento: '',
-      genero: ''
-    },
-    {
-      id: 2,
-      asiento: '29',
-      numeroDocumento: '',
-      nombre: '',
-      apellido: '',
-      fechaNacimiento: '',
-      genero: ''
-    },
-    {
-      id: 3,
-      asiento: '29',
-      numeroDocumento: '',
-      nombre: '',
-      apellido: '',
-      fechaNacimiento: '',
-      genero: ''
-    },
-    {
-      id: 4,
-      asiento: '29',
-      numeroDocumento: '',
-      nombre: '',
-      apellido: '',
-      fechaNacimiento: '',
-      genero: ''
-    }
-  ]);
-
-  const [correo, setCorreo] = useState('arturo200512@gmail.com');
-  const [confirmacionCorreo, setConfirmacionCorreo] = useState('arturo200512@gmail.com');
-  const [telefono, setTelefono] = useState('932889985');
-
-  // Estados para opciones de pago
-  const [codigoPromocional, setCodigoPromocional] = useState('');
-  const [metodoPago, setMetodoPago] = useState('');
-  const [aceptaPoliticas, setAceptaPoliticas] = useState(false);
-
-  // Estados para manejo de DNI
-  const [loadingDNI, setLoadingDNI] = useState({});
-  const timeoutRefs = useRef({});
-
-  const handlePasajeroChange = (index, field, value) => {
-    const newPasajeros = [...pasajeros];
-    
-    // Si es el campo de número de documento, manejar la lógica de DNI
-    if (field === 'numeroDocumento') {
-      const dniAnterior = newPasajeros[index].numeroDocumento;
-      
-      // Actualizar el DNI inmediatamente
-      newPasajeros[index][field] = value;
-      setPasajeros(newPasajeros);
-      
-      // Manejar la búsqueda de DNI
-      handleDNIChange(index, value, dniAnterior);
-    } else {
-      // Para otros campos, actualizar normalmente
-      newPasajeros[index][field] = value;
-      setPasajeros(newPasajeros);
-    }
-  };
-
-  const handleDNIChange = (index, dni, dniAnterior) => {
-    // Limpiar timeout anterior si existe
-    if (timeoutRefs.current[index]) {
-      clearTimeout(timeoutRefs.current[index]);
-    }
-
-    // Limpiar estado de loading si el DNI no es válido
-    if (!validateDNI(dni)) {
-      setLoadingDNI(prev => ({
-        ...prev,
-        [index]: false
-      }));
-      return;
-    }
-
-    // Si el DNI cambió (y no está vacío), limpiar los campos inmediatamente
-    if (dni !== dniAnterior && dni.length > 0) {
-      setPasajeros(prev => {
-        const newPasajeros = [...prev];
-        newPasajeros[index] = {
-          ...newPasajeros[index],
-          nombre: '',
-          apellido: ''
-        };
-        return newPasajeros;
-      });
-    }
-
-    // Establecer nuevo timeout para la búsqueda solo si el DNI es válido
-    if (validateDNI(dni)) {
-      timeoutRefs.current[index] = setTimeout(async () => {
-        await searchDNI(index, dni);
-      }, 1500); // Reducido a 1.5 segundos para mejor UX
-    }
-  };
-
-  const searchDNI = async (index, dni) => {
-    if (!validateDNI(dni)) return;
-
-    // Verificar que el DNI actual siga siendo el mismo (por si el usuario siguió escribiendo)
-    const currentDNI = pasajeros[index].numeroDocumento;
-    if (currentDNI !== dni) {
-      return;
-    }
-
-    try {
-      setLoadingDNI(prev => ({
-        ...prev,
-        [index]: true
-      }));
-
-      const result = await getDNIData(dni);
-
-      if (result.success && result.data) {
-        // Verificar nuevamente que el DNI no haya cambiado durante la búsqueda
-        setPasajeros(prev => {
-          const currentDNI = prev[index].numeroDocumento;
-          if (currentDNI === dni) {
-            const newPasajeros = [...prev];
-            newPasajeros[index] = {
-              ...newPasajeros[index],
-              nombre: result.data.nombre || '',
-              apellido: result.data.apellido || ''
-            };
-            return newPasajeros;
-          }
-          return prev;
-        });
-      } else {
-        // Si no se encontraron datos, asegurarse de que los campos queden limpios
-        setPasajeros(prev => {
-          const currentDNI = prev[index].numeroDocumento;
-          if (currentDNI === dni) {
-            const newPasajeros = [...prev];
-            newPasajeros[index] = {
-              ...newPasajeros[index],
-              nombre: '',
-              apellido: ''
-            };
-            return newPasajeros;
-          }
-          return prev;
-        });
+  // Función para obtener datos del servicio
+  const getDatosServicio = (tipoServicio) => {
+    const servicios = {
+      movitex_one: {
+        imagen: MovitexOneFont,
+        alt: 'Movitex One',
+        badgeClass: 'bg-[#fab926]'
+      },
+      movitex_pro: {
+        imagen: MovitexProFont,
+        alt: 'Movitex Pro', 
+        badgeClass: 'bg-[#fab926]'
+      },
+      movitex_ultra: {
+        imagen: MovitexUltraFont,
+        alt: 'Movitex Ultra',
+        badgeClass: 'bg-black'
       }
-    } catch (error) {
-      console.error('Error al buscar DNI:', error);
-      // En caso de error, limpiar los campos
-      setPasajeros(prev => {
-        const currentDNI = prev[index].numeroDocumento;
-        if (currentDNI === dni) {
-          const newPasajeros = [...prev];
-          newPasajeros[index] = {
-            ...newPasajeros[index],
-            nombre: '',
-            apellido: ''
-          };
-          return newPasajeros;
-        }
-        return prev;
-      });
-    } finally {
-      setLoadingDNI(prev => ({
-        ...prev,
-        [index]: false
-      }));
-    }
+    };
+    return servicios[tipoServicio] || servicios.movitex_one;
   };
 
-  // Limpiar timeouts al desmontar el componente
-  useEffect(() => {
-    return () => {
-      Object.values(timeoutRefs.current).forEach(timeout => {
-        if (timeout) clearTimeout(timeout);
-      });
-    };
-  }, []);
+  // Consumir el contexto de reserva
+  const {
+    // Estados de reserva
+    asientosReservados,
+    totalPrecio,
+    
+    // Estados del formulario
+    pasajeros,
+    correo,
+    confirmacionCorreo,
+    telefono,
+    codigoPromocional,
+    metodoPago,
+    aceptaPoliticas,
+    
+    // Estados del cronómetro
+    tiempoRestante,
+    mostrarModalTiempo,
+    
+    // Estados de DNI
+    loadingDNI,
+    
+    // Estados de pago
+    procesandoPago,
+    errorPago,
+    reservaExitosa,
+    
+    // Datos del viaje
+    datosViaje,
+    
+    // Estado de usuario logueado
+    isUserLoggedIn,
+    
+    // Funciones
+    inicializarReserva,
+    handleTiempoAgotado,
+    formatTiempo,
+    handlePasajeroChange,
+    crearReserva,
+    
+    // Setters
+    setCorreo,
+    setConfirmacionCorreo,
+    setTelefono,
+    setCodigoPromocional,
+    setMetodoPago,
+    setAceptaPoliticas,
+    setErrorPago
+  } = useReserva();
+
+  // La inicialización se maneja automáticamente en el ReservaContext
+
+  // Función para manejar el pago
+  const handlePagar = async () => {
+    if (procesandoPago) return;
+    
+    try {
+      await crearReserva();
+      // La función crearReserva maneja la redirección y limpieza
+    } catch (error) {
+      console.error('Error al procesar pago:', error);
+      // El error ya se maneja en el contexto
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -262,109 +162,109 @@ const Reserva = () => {
                   </h2>
                   <div className="ml-auto flex items-center text-[#f0251f]">
                     <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm font-semibold" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>07:05</span>
+                    <span className="text-[#f0251f] font-bold">{formatTiempo(tiempoRestante)}</span>
                   </div>
                 </div>
 
                 {/* Formularios de pasajeros */}
                 <div className="space-y-6">
                   {pasajeros.map((pasajero, index) => (
-                    <div key={pasajero.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={pasajero.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
                       {/* Primera fila */}
-                      <div className="grid grid-cols-2 md:grid-cols-[auto_1fr_1fr_1fr] gap-4 mb-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                            N°
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_1fr] gap-3 sm:gap-4 mb-3 sm:mb-4">
+                        <div className="flex items-center sm:block">
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                            Asiento N°
                           </label>
-                          <div className="w-7 h-7 bg-[#f0251f] rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                              {pasajero.asiento}
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-[#f0251f] rounded-full flex items-center justify-center ml-2 sm:ml-0">
+                            <span className="text-white font-bold text-xs sm:text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                              {asientosReservados[index]?.numero || asientosReservados[index] || (index + 1)}
                             </span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             N° Documento
                           </label>
                           <div className="relative">
                             <input
                               type="text"
-                              value={pasajero.numeroDocumento}
+                              value={pasajero.numeroDocumento || ''}
                               onChange={(e) => handlePasajeroChange(index, 'numeroDocumento', e.target.value)}
-                              placeholder={index === 0 ? "75132058" : "N°de documento"}
+                              placeholder="DNI"
                               maxLength={8}
-                              className={`w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm ${
-                                loadingDNI[index] ? 'bg-red-50 pr-12' : 'pr-3'
+                              className={`w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm ${
+                                loadingDNI[index] ? 'bg-red-50 pr-8 sm:pr-12' : 'pr-2 sm:pr-3'
                               }`}
                               style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                               disabled={loadingDNI[index]}
                             />
                             {loadingDNI[index] && (
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#f0251f] border-t-transparent"></div>
+                              <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+                                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-[#f0251f] border-t-transparent"></div>
                               </div>
                             )}
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             Nombres
                           </label>
                           <input
                             type="text"
-                            value={pasajero.nombre}
+                            value={pasajero.nombre || ''}
                             onChange={(e) => handlePasajeroChange(index, 'nombre', e.target.value)}
-                            placeholder={index === 0 ? "Cristhofer" : ""}
-                            className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs"
+                            placeholder="Nombres"
+                            className="w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm"
                             style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             Apellidos
                           </label>
                           <input
                             type="text"
-                            value={pasajero.apellido}
+                            value={pasajero.apellido || ''}
                             onChange={(e) => handlePasajeroChange(index, 'apellido', e.target.value)}
-                            placeholder={index === 0 ? "Leonardo" : ""}
-                            className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs"
+                            placeholder="Apellidos"
+                            className="w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm"
                             style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                           />
                         </div>
                       </div>
 
                       {/* Segunda fila - Fecha de nacimiento y Género */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             Fecha de nacimiento
                           </label>
                           <input
                             type="date"
-                            value={pasajero.fechaNacimiento}
+                            value={pasajero.fechaNacimiento || ''}
                             onChange={(e) => handlePasajeroChange(index, 'fechaNacimiento', e.target.value)}
-                            className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm"
+                            className="w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm"
                             style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                          <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             Género
                           </label>
                           <select
-                            value={pasajero.genero}
+                            value={pasajero.genero || ''}
                             onChange={(e) => handlePasajeroChange(index, 'genero', e.target.value)}
-                            className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm"
+                            className="w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm"
                             style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                           >
-                            <option value="">Seleccionar género</option>
+                            <option value="">Seleccionar</option>
                             <option value="masculino">Masculino</option>
                             <option value="femenino">Femenino</option>
                           </select>
@@ -375,43 +275,61 @@ const Reserva = () => {
                 </div>
 
                 {/* Información de contacto */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                         Correo electrónico
                       </label>
                       <input
                         type="email"
                         value={correo}
-                        onChange={(e) => setCorreo(e.target.value)}
-                        className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm"
+                        onChange={(e) => !isUserLoggedIn && setCorreo(e.target.value)}
+                        readOnly={isUserLoggedIn}
+                        placeholder="correo@ejemplo.com"
+                        className={`w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm ${
+                          isUserLoggedIn 
+                            ? 'bg-gray-100 cursor-not-allowed' 
+                            : 'focus:outline-none focus:border-[#f0251f]'
+                        }`}
                         style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                        Confirmación correo
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                        Confirmar correo
                       </label>
                       <input
                         type="email"
                         value={confirmacionCorreo}
-                        onChange={(e) => setConfirmacionCorreo(e.target.value)}
-                        className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm"
+                        onChange={(e) => !isUserLoggedIn && setConfirmacionCorreo(e.target.value)}
+                        readOnly={isUserLoggedIn}
+                        placeholder="confirmar correo"
+                        className={`w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm ${
+                          isUserLoggedIn 
+                            ? 'bg-gray-100 cursor-not-allowed' 
+                            : 'focus:outline-none focus:border-[#f0251f]'
+                        }`}
                         style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-600 mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                         Teléfono
                       </label>
                       <input
                         type="tel"
                         value={telefono}
-                        onChange={(e) => setTelefono(e.target.value)}
-                        className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-sm"
+                        onChange={(e) => !isUserLoggedIn && setTelefono(e.target.value)}
+                        readOnly={isUserLoggedIn}
+                        placeholder="999 999 999"
+                        className={`w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm ${
+                          isUserLoggedIn 
+                            ? 'bg-gray-100 cursor-not-allowed' 
+                            : 'focus:outline-none focus:border-[#f0251f]'
+                        }`}
                         style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
                       />
                     </div>
@@ -447,72 +365,72 @@ const Reserva = () => {
                     </h3>
                   </div>
                   {/* Métodos de pago */}
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                     {/* Yape/Plin */}
-                    <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <input
                         type="radio"
                         name="metodoPago"
                         value="yape-plin"
                         checked={metodoPago === 'yape-plin'}
                         onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-4 h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
+                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
                       />
-                      <span className="text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         Paga con
                       </span>
-                      <span className="text-sm font-bold text-purple-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm font-bold text-purple-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         Yape
                       </span>
-                      <span className="text-sm text-gray-500" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm text-gray-500" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         o
                       </span>
-                      <span className="text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         Plin
                       </span>
-                      <div className="flex space-x-2 ml-auto">
-                        <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
+                      <div className="flex space-x-1 sm:space-x-2 ml-auto">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-600 rounded flex items-center justify-center">
                           <span className="text-white text-xs font-bold">Y</span>
                         </div>
-                        <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 rounded flex items-center justify-center">
                           <span className="text-white text-xs font-bold">P</span>
                         </div>
                       </div>
                     </label>
 
                     {/* Tarjeta de Crédito/Débito */}
-                    <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <input
                         type="radio"
                         name="metodoPago"
                         value="tarjeta"
                         checked={metodoPago === 'tarjeta'}
                         onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-4 h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
+                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
                       />
-                      <span className="text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Tarjeta de Crédito / Débito
+                      <span className="text-xs sm:text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                        Tarjeta Crédito/Débito
                       </span>
-                      <span className="text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         Openpay
                       </span>
                     </label>
 
                     {/* PagoEfectivo */}
-                    <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <input
                         type="radio"
                         name="metodoPago"
                         value="pagoefectivo"
                         checked={metodoPago === 'pagoefectivo'}
                         onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-4 h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
+                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
                       />
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-6 bg-yellow-500 rounded flex items-center justify-center">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <div className="w-6 h-5 sm:w-8 sm:h-6 bg-yellow-500 rounded flex items-center justify-center">
                           <span className="text-white text-xs font-bold">P</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                        <span className="text-xs sm:text-sm font-bold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                           PagoEfectivo
                         </span>
                       </div>
@@ -520,48 +438,58 @@ const Reserva = () => {
                   </div>
 
                   {/* Aceptar políticas */}
-                  <div className="mb-6">
-                    <label className="flex items-start space-x-3 cursor-pointer">
+                  <div className="mb-4 sm:mb-6">
+                    <label className="flex items-start space-x-2 sm:space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={aceptaPoliticas}
                         onChange={(e) => setAceptaPoliticas(e.target.checked)}
-                        className="w-4 h-4 text-[#f0251f] border-gray-300 rounded focus:ring-[#f0251f] focus:ring-2 mt-0.5"
+                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 rounded focus:ring-[#f0251f] focus:ring-2 mt-0.5"
                       />
-                      <span className="text-sm text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                      <span className="text-xs sm:text-sm text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                         Acepto la{' '}
                         <span className="text-[#f0251f] font-semibold cursor-pointer hover:underline">
                           política de privacidad, términos y condiciones
                         </span>{' '}
-                        aplicables, y confirmo que cuento con la documentación requerida por la empresa y el Gobierno de Perú.
+                        aplicables, y confirmo que cuento con la documentación requerida.
                       </span>
                     </label>
                   </div>
 
                   {/* Botón PAGAR */}
                   <button
-                    className={`w-full py-4 rounded-lg text-white font-bold text-lg transition-all duration-200 ${
-                      aceptaPoliticas && metodoPago
+                    onClick={handlePagar}
+                    className={`w-full py-3 sm:py-4 rounded-lg text-white font-bold text-base sm:text-lg transition-all duration-200 flex items-center justify-center ${
+                      (aceptaPoliticas && metodoPago && !procesandoPago)
                         ? 'bg-[#f0251f] hover:bg-[#d01f1b] cursor-pointer'
                         : 'bg-gray-400 cursor-not-allowed'
                     }`}
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                    disabled={!aceptaPoliticas || !metodoPago}
+                    disabled={!aceptaPoliticas || !metodoPago || procesandoPago}
                   >
-                    PAGAR
+                    {procesandoPago ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-2"></div>
+                        <span className="text-sm sm:text-base">PROCESANDO...</span>
+                      </>
+                    ) : (
+                      <span className="text-sm sm:text-base">PAGAR</span>
+                    )}
                   </button>
+
+
                 </div>
               </div>
             </div>
 
             {/* Columna derecha - Resumen */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
-                <h3 className="text-lg font-bold text-gray-800 mb-4" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 sticky top-24">
+                <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
                   Detalles de la <span className="text-[#f0251f]">compra</span>
                 </h3>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>IDA</span>
                     <span className="px-2 py-1 bg-[#f0251f] text-white text-xs font-semibold rounded" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
@@ -570,47 +498,166 @@ const Reserva = () => {
                   </div>
 
                   <div className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                    <p className="font-semibold">SUPERNOVA (r)</p>
-                    <p>Jue, 25 Sep, 2025</p>
+                    <div className="mb-2">
+                      {(() => {
+                        const servicio = getDatosServicio(datosViaje?.tipoServicio || 'movitex_one');
+                        return (
+                          <div className={`inline-flex items-center px-2 py-1 rounded ${servicio.badgeClass}`}>
+                            <img 
+                              src={servicio.imagen} 
+                              alt={servicio.alt} 
+                              className="h-3 w-auto" 
+                            />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <p>{datosViaje?.fecha ? new Date(datosViaje.fecha).toLocaleDateString('es-ES', { 
+                      weekday: 'short', 
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    }) : new Date().toLocaleDateString('es-ES', { 
+                      weekday: 'short', 
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}</p>
                   </div>
 
                   <div className="flex items-center text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     <svg className="w-4 h-4 text-[#f0251f] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
-                    <span className="text-gray-600">Lima-Peru</span>
+                    <span className="text-gray-600">
+                      {datosViaje?.ciudadOrigen?.nombre || 'Ciudad origen no disponible'}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500 ml-6" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                    Lima (28 de Julio), 13:35 PM
+                    {(() => {
+                      if (datosViaje?.horaPartida) {
+                        const [horas, minutos] = datosViaje.horaPartida.split(':').map(num => parseInt(num));
+                        const fecha = new Date();
+                        fecha.setHours(horas, minutos, 0, 0);
+                        return fecha.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        });
+                      }
+                      return 'Hora no disponible';
+                    })()}
                   </p>
 
                   <div className="flex items-center text-sm" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     <svg className="w-4 h-4 text-[#f0251f] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
-                    <span className="text-gray-600">Arequipa-Peru</span>
+                    <span className="text-gray-600">
+                      {datosViaje?.ciudadDestino?.nombre || 'Ciudad destino no disponible'}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500 ml-6" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-                    Arequipa (Terminal), 08:00 AM aprox
+                    {(() => {
+                      // Calcular hora de llegada: hora de salida + duración
+                      if (datosViaje?.horaPartida && datosViaje?.duracionAprox) {
+                        const [horas, minutos] = datosViaje.horaPartida.split(':').map(num => parseInt(num));
+                        const duracionHoras = parseInt(datosViaje.duracionAprox);
+                        
+                        const fechaSalida = new Date();
+                        fechaSalida.setHours(horas, minutos, 0, 0);
+                        
+                        const fechaLlegada = new Date(fechaSalida.getTime() + (duracionHoras * 60 * 60 * 1000));
+                        
+                        return fechaLlegada.toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        }) + ' aprox';
+                      }
+                      return 'Hora no disponible';
+                    })()}
                   </p>
 
                   <div className="flex items-center text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Duración: 18hrs aprox</span>
+                    <span>
+                      Duración: {(() => {
+                        if (datosViaje?.duracionAprox) {
+                          const duracionHoras = parseInt(datosViaje.duracionAprox);
+                          const horas = Math.floor(duracionHoras);
+                          const minutos = Math.round((duracionHoras - horas) * 60);
+                          
+                          if (minutos > 0) {
+                            return `${horas}h ${minutos}m aprox`;
+                          }
+                          return `${horas}h aprox`;
+                        }
+                        return 'No disponible';
+                      })()} 
+                    </span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>2 x 140°</span>
-                    <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>S/180</span>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                        Pasajeros:
+                      </span>
+                      <span className="text-sm font-semibold text-gray-800" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                        {pasajeros.length}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                        Asientos:
+                      </span>
+                      <span className="text-sm text-gray-800" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                        {asientosReservados.map(asiento => asiento?.numero || asiento).join(', ')}
+                      </span>
+                    </div>
+
+                    {/* Desglose por tipo de asiento */}
+                    {(() => {
+                      // Agrupar asientos por tipo
+                      const asientosPorTipo = {};
+                      asientosReservados.forEach(asiento => {
+                        const tipo = `${asiento.tipo}°`;
+                        const precio = asiento.precio || 0;
+                        
+                        if (!asientosPorTipo[tipo]) {
+                          asientosPorTipo[tipo] = {
+                            cantidad: 0,
+                            precioUnitario: precio,
+                            total: 0
+                          };
+                        }
+                        
+                        asientosPorTipo[tipo].cantidad += 1;
+                        asientosPorTipo[tipo].total += precio;
+                      });
+
+                      return Object.entries(asientosPorTipo).map(([tipo, datos]) => (
+                        <div key={tipo} className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                            {datos.cantidad} x {tipo}:
+                          </span>
+                          <span className="text-sm text-gray-800" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                            S/{datos.total.toFixed(2)}
+                          </span>
+                        </div>
+                      ));
+                    })()}
                   </div>
+
                   <div className="bg-[#f0251f] text-white p-3 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-lg" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>Total</span>
-                      <span className="font-bold text-lg" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>S/180</span>
+                      <span className="font-bold text-lg" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>Total a pagar</span>
+                      <span className="font-bold text-lg" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>S/{totalPrecio.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -619,6 +666,76 @@ const Reserva = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de error de pago */}
+      {errorPago && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 
+                  className="text-lg font-bold text-red-800" 
+                  style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                >
+                  Error en el Pago
+                </h3>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p 
+                className="text-sm text-gray-700" 
+                style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
+              >
+                {errorPago}
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setErrorPago(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                style={{ fontFamily: 'MusticaPro, sans-serif' }}
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setErrorPago(null);
+                  // Aquí podrías agregar lógica adicional como limpiar formulario o volver a intentar
+                }}
+                className="px-4 py-2 bg-[#f0251f] text-white rounded-lg hover:bg-[#d91f1a] transition-colors font-medium"
+                style={{ fontFamily: 'MusticaPro, sans-serif' }}
+              >
+                Intentar de Nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de tiempo agotado */}
+      {mostrarModalTiempo && (
+        <div className="fixed inset-0 bg-black/10  backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-4 text-center">Tiempo agotado</h3>
+            <p className="text-gray-700 mb-4">
+              El tiempo para completar tu reserva ha expirado. Serás redirigido a la página de selección de asientos.
+            </p>
+            <button
+              onClick={handleTiempoAgotado}
+              className="w-full bg-red-600 text-white btn py-2 rounded-full font-semibold hover:bg-red-700 transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

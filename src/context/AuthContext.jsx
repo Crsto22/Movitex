@@ -480,6 +480,94 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Función para obtener las reservas completadas del usuario
+  const obtenerReservasCompletadas = async (userId = null) => {
+    try {
+      // Si no se proporciona userId, usar el del usuario actual
+      const targetUserId = userId || user?.id;
+      
+      if (!targetUserId) {
+        return {
+          success: false,
+          message: 'No hay usuario logueado',
+          reservas: []
+        };
+      }
+
+      console.log('📋 Obteniendo reservas completadas para usuario:', targetUserId);
+
+      // Llamar a la función SQL para obtener las reservas
+      const { data, error } = await supabase.rpc('obtener_reservas_completadas_usuario', {
+        p_id_usuario: targetUserId
+      });
+
+      if (error) {
+        console.error('❌ Error al obtener reservas:', error);
+        throw new Error(`Error al obtener reservas: ${error.message}`);
+      }
+
+      if (!data) {
+        console.log('⚠️ No se encontraron reservas para el usuario');
+        return {
+          success: true,
+          message: 'No se encontraron reservas',
+          reservas: []
+        };
+      }
+
+      console.log('✅ Reservas obtenidas:', data.length);
+      console.log('📊 Datos de reservas:', data);
+
+      // Formatear los datos para mejor uso en la UI
+      const reservasFormateadas = data.map(reserva => ({
+        idReserva: reserva.id_reserva,
+        fechaReserva: reserva.fecha_reserva,
+        totalPagado: parseFloat(reserva.total_pagado),
+        origen: reserva.origen,
+        destino: reserva.destino,
+        fechaViaje: reserva.fecha_viaje,
+        horaSalida: reserva.hora_salida,
+        tipoServicio: reserva.tipo_servicio,
+        totalPasajeros: parseInt(reserva.total_pasajeros),
+        // Formatear fechas para mejor legibilidad
+        fechaReservaFormateada: new Date(reserva.fecha_reserva).toLocaleDateString('es-PE', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        fechaViajeFormateada: new Date(reserva.fecha_viaje).toLocaleDateString('es-PE', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        horaSalidaFormateada: reserva.hora_salida?.slice(0, 5), // HH:MM formato
+        // Formatear tipo de servicio para mostrar
+        tipoServicioFormateado: reserva.tipo_servicio === 'movitex_one' ? 'Movitex One' :
+                                reserva.tipo_servicio === 'movitex_pro' ? 'Movitex Pro' :
+                                reserva.tipo_servicio === 'movitex_ultra' ? 'Movitex Ultra' :
+                                reserva.tipo_servicio
+      }));
+
+      return {
+        success: true,
+        message: `Se encontraron ${reservasFormateadas.length} reservas`,
+        reservas: reservasFormateadas,
+        totalReservas: reservasFormateadas.length
+      };
+
+    } catch (error) {
+      console.error('❌ Error al obtener reservas completadas:', error);
+      return {
+        success: false,
+        message: error.message || 'Error al obtener las reservas',
+        reservas: []
+      };
+    }
+  };
+
   // Función para actualizar la foto de perfil de Google en cada login
   const updateGoogleProfilePhoto = async (user) => {
     try {
@@ -879,7 +967,8 @@ export const AuthProvider = ({ children }) => {
     updateUserData,
     resendConfirmationEmail,
     resetPasswordForEmail,
-    updatePassword
+    updatePassword,
+    obtenerReservasCompletadas
   };
 
   return (

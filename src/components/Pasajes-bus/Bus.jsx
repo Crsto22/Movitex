@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Lottie from 'lottie-react'
 import { X } from 'lucide-react'
 import asientosDisponibles from '../../assets/icons/asientos-disponibles.svg'
@@ -7,10 +8,13 @@ import asientosSeleccionados from '../../assets/icons/asientos-seleccionados.svg
 import asientosOcupados from '../../assets/icons/asientos-ocupados.svg'
 import BusLoadingAnimation from '../../lottiefiles/BusLoading.json'
 import { useAsientos } from '../../context/AsientosContext'
+import { useViajes } from '../../context/ViajesContext'
+import { useCiudades } from '../../context/CiudadesContext'
 
 function Bus({ idViaje = null }) {
   console.log('🚌 Componente Bus iniciado con idViaje:', idViaje)
   
+  const navigate = useNavigate()
   const [seatData, setSeatData] = useState([])
   const [allSeatsData, setAllSeatsData] = useState([]) // Almacenar todos los asientos de ambos pisos
   const [hoveredSeat, setHoveredSeat] = useState(null)
@@ -22,6 +26,12 @@ function Bus({ idViaje = null }) {
   
   // Hook del contexto de asientos
   const { asientos, loading, error, obtenerAsientosPorViaje } = useAsientos()
+  
+  // Hook del contexto de viajes
+  const { viajes } = useViajes()
+  
+  // Hook del contexto de ciudades
+  const { ciudades } = useCiudades()
   
   // Log para monitorear cambios en el contexto
   useEffect(() => {
@@ -415,14 +425,143 @@ function Bus({ idViaje = null }) {
                 if (selectedSeats.length > 0) {
                   console.log('Asientos seleccionados:', selectedSeats)
                   
-                  // Crear mensaje con los asientos seleccionados
-                  const asientosInfo = selectedSeats.map(seat => 
-                    `Asiento: ${seat.number} (ID: ${seat.id})`
-                  ).join('\n')
+                  // Buscar datos del viaje seleccionado
+                  const viajeSeleccionado = viajes.find(viaje => viaje.idViaje === idViaje)
                   
-                  alert(`Se eligieron los siguientes asientos:\n\n${asientosInfo}`)
+                  // Obtener datos de origen y destino desde sessionStorage o URL
+                  const origenDestino = sessionStorage.getItem('busqueda_viajes')
+                  let datosRuta = null
                   
-                  // Aquí puedes agregar la lógica para continuar con la compra
+                  if (origenDestino) {
+                    try {
+                      datosRuta = JSON.parse(origenDestino)
+                    } catch (error) {
+                      console.error('Error al parsear datos de búsqueda:', error)
+                    }
+                  }
+                  
+                  // Buscar los nombres completos de las ciudades
+                  const ciudadOrigen = ciudades.find(ciudad => 
+                    ciudad.nombre.toLowerCase() === datosRuta?.ciudadOrigen?.toLowerCase()
+                  )
+                  const ciudadDestino = ciudades.find(ciudad => 
+                    ciudad.nombre.toLowerCase() === datosRuta?.ciudadDestino?.toLowerCase()
+                  )
+                  
+                  console.log('🚌 Datos del viaje seleccionado:', viajeSeleccionado)
+                  console.log('🗺️ Datos de ruta:', datosRuta)
+                  console.log('🏙️ Ciudades encontradas:', { ciudadOrigen, ciudadDestino })
+                  
+                  // Preparar asientos seleccionados
+                  const asientosSeleccionados = selectedSeats.map(seat => ({
+                    id: seat.id,
+                    numero: seat.number,
+                    precio: parseFloat(seat.fare),
+                    tipo: seat.anguloReclinacion,
+                    piso: seat.pisoNumero
+                  }))
+
+                  // Preparar datos del viaje
+                  const datosViaje = {
+                    tipoServicio: viajeSeleccionado?.tipoServicio || 'Movitex One',
+                    fecha: viajeSeleccionado?.fechaIda || datosRuta?.fecha || new Date().toISOString(),
+                    horaPartida: viajeSeleccionado?.horaSalida || null,
+                    horaLlegada: null, // Calculado dinámicamente si existe duración
+                    duracionAprox: viajeSeleccionado?.duracionEstimada || null,
+                    ciudadOrigen: ciudadOrigen ? { 
+                      nombre: ciudadOrigen.nombre 
+                    } : (datosRuta?.ciudadOrigen ? {
+                      nombre: datosRuta.ciudadOrigen
+                    } : null),
+                    ciudadDestino: ciudadDestino ? { 
+                      nombre: ciudadDestino.nombre 
+                    } : (datosRuta?.ciudadDestino ? {
+                      nombre: datosRuta.ciudadDestino
+                    } : null),
+                    terminalOrigen: ciudadOrigen?.terminal || null,
+                    terminalDestino: ciudadDestino?.terminal || null,
+                    tipoAsiento: selectedSeats[0]?.anguloReclinacion || '140°'
+                  }
+                  
+                  // ✅ VERIFICAR SI HAY CAMBIOS EN LA SELECCIÓN DE ASIENTOS
+                  const existingData = sessionStorage.getItem('movitex_reserva_completa')
+                  let shouldReinitialize = false
+                  
+                  if (existingData) {
+                    try {
+                      const parsedData = JSON.parse(existingData)
+                      
+                      // Verificar si los asientos seleccionados son diferentes
+                      const existingSeats = parsedData.asientosSeleccionados || []
+                      const newSeatIds = asientosSeleccionados.map(s => s.id).sort()
+                      const existingSeatIds = existingSeats.map(s => s.id).sort()
+                      
+                      const seatsDifferent = JSON.stringify(newSeatIds) !== JSON.stringify(existingSeatIds)
+                      const viajesDifferent = parsedData.idViaje !== idViaje
+                      
+                      if (seatsDifferent || viajesDifferent) {
+                        console.log('🔄 Detectados cambios en la selección:', {
+                          asientosDiferentes: seatsDifferent,
+                          viajesDiferentes: viajesDifferent,
+                          asientosAnteriores: existingSeatIds,
+                          asientosNuevos: newSeatIds
+                        })
+                        shouldReinitialize = true
+                      }
+                    } catch (error) {
+                      console.error('Error al verificar datos existentes:', error)
+                      shouldReinitialize = true
+                    }
+                  }
+                  
+                  // Configurar cronómetro
+                  const tiempoInicio = Date.now()
+                  const tiempoLimite = tiempoInicio + (10 * 60 * 1000) // 10 minutos
+                  
+                  if (shouldReinitialize) {
+                    // ✅ HAY CAMBIOS: Limpiar y reiniciar con nuevos datos
+                    console.log('🔄 Reiniciando sessionStorage con nuevos datos de asientos')
+                    
+                    // Limpiar datos anteriores
+                    sessionStorage.removeItem('movitex_reserva_completa')
+                    sessionStorage.removeItem('movitex_reserva_data')
+                    sessionStorage.removeItem('movitex_timer_start')
+                    sessionStorage.removeItem('movitex_timer_limit')
+                    sessionStorage.removeItem('movitex_formulario_data')
+                  }
+                  
+                  // ✅ CREAR NUEVA ESTRUCTURA CONSOLIDADA
+                  const nuevaReservaCompleta = {
+                    datosViaje: datosViaje,
+                    asientosSeleccionados: asientosSeleccionados,
+                    totalPrecio: totalPrice,
+                    idViaje: idViaje,
+                    timerStart: tiempoInicio,
+                    timerLimit: tiempoLimite,
+                    formulario: {
+                      pasajeros: [],
+                      correo: '',
+                      confirmacionCorreo: '',
+                      telefono: '',
+                      codigoPromocional: '',
+                      metodoPago: '',
+                      aceptaPoliticas: false
+                    },
+                    timestamp: Date.now()
+                  }
+                  
+                  // Guardar nueva estructura
+                  sessionStorage.setItem('movitex_reserva_completa', JSON.stringify(nuevaReservaCompleta))
+                  
+                  console.log('✅ Datos de reserva actualizados:', {
+                    reiniciado: shouldReinitialize,
+                    asientos: asientosSeleccionados.length,
+                    total: totalPrice,
+                    viaje: idViaje
+                  })
+                  
+                  // Navegar a la página de reserva
+                  navigate('/pasajes-bus/reserva')
                 }
               }}
             >

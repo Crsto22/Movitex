@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import User from '../assets/User.png';
 import Navbar from '../components/Navbar';
@@ -7,9 +7,12 @@ import Footer from '../components/Footer';
 import Maletas from '../assets/icons/Maletas.png';
 import EditUserModal from '../components/EditUserModal';
 const MiCuenta = () => {
-    const { user, userData, logoutUser } = useAuth();
+    const { user, userData, logoutUser, obtenerReservasCompletadas } = useAuth();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('mi-cuenta'); // Estado para manejar la sección activa
+    const [reservas, setReservas] = useState([]);
+    const [loadingReservas, setLoadingReservas] = useState(false);
+    const [errorReservas, setErrorReservas] = useState(null);
 
     const handleLogout = async () => {
         try {
@@ -31,6 +34,45 @@ const MiCuenta = () => {
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
     };
+
+    // Función para cargar las reservas del usuario
+    const cargarReservas = async () => {
+        try {
+            setLoadingReservas(true);
+            setErrorReservas(null);
+            
+            const resultado = await obtenerReservasCompletadas();
+            
+            if (resultado.success) {
+                setReservas(resultado.reservas);
+                console.log('✅ Reservas cargadas:', resultado.reservas);
+            } else {
+                setErrorReservas(resultado.message);
+                console.error('❌ Error al cargar reservas:', resultado.message);
+            }
+        } catch (error) {
+            console.error('❌ Error inesperado al cargar reservas:', error);
+            setErrorReservas('Error inesperado al cargar las reservas');
+        } finally {
+            setLoadingReservas(false);
+        }
+    };
+
+    // Cargar reservas SOLO cuando se selecciona la sección "mis-viajes"
+    useEffect(() => {
+        if (activeSection === 'mis-viajes' && user && userData) {
+            // Solo cargar si no hay reservas cargadas o si no está cargando
+            if (reservas.length === 0 && !loadingReservas) {
+                console.log('👤 Usuario ha ingresado a "Mis viajes", cargando reservas...');
+                cargarReservas();
+            }
+        } else if (activeSection !== 'mis-viajes' && reservas.length > 0) {
+            // Limpiar reservas cuando sale de la sección para forzar recarga fresca la próxima vez
+            console.log('👋 Usuario salió de "Mis viajes", limpiando cache de reservas');
+            setReservas([]);
+            setErrorReservas(null);
+        }
+    }, [activeSection, user, userData]);
 
     // Función para renderizar el contenido según la sección activa
     const renderContent = () => {
@@ -93,25 +135,193 @@ const MiCuenta = () => {
                             Historial de todos tus viajes realizados.
                         </p>
 
-                        {/* Contenido de mis viajes */}
-                        <div className="text-center py-8 sm:py-12 lg:py-16">
-                           
-                            {/* Mensaje principal */}
-                            <h3
-                                className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 mb-3 sm:mb-4"
-                                style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                            >
-                                No hay viajes aún
-                            </h3>
+                        {/* Estado de carga */}
+                        {loadingReservas && (
+                            <div className="text-center py-8">
+                                <div className="inline-block animate-spin rounded-full border-4 border-gray-300 border-t-[#f0251f] w-8 h-8 mb-4"></div>
+                                <p
+                                    className="text-gray-600"
+                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                >
+                                    Cargando tus viajes...
+                                </p>
+                            </div>
+                        )}
 
-                            {/* Mensaje descriptivo */}
-                            <p
-                                className="text-sm sm:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto px-4"
-                                style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                            >
-                                Cuando realices tu primer viaje con Movitex, aparecerá aquí tu historial completo.
-                            </p>
-                        </div>
+                        {/* Error al cargar */}
+                        {errorReservas && !loadingReservas && (
+                            <div className="text-center py-8">
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+                                    <p style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                                        {errorReservas}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={cargarReservas}
+                                    className="bg-[#f0251f] text-white px-4 py-2 rounded-lg hover:bg-[#d91f1a] transition-colors"
+                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                >
+                                    Intentar de nuevo
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Lista de reservas */}
+                        {!loadingReservas && !errorReservas && (
+                            <>
+                                {reservas.length === 0 ? (
+                                    /* Mensaje cuando no hay viajes */
+                                    <div className="text-center py-8 sm:py-12 lg:py-16">
+                                        {/* Mensaje principal */}
+                                        <h3
+                                            className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 mb-3 sm:mb-4"
+                                            style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                        >
+                                            No hay viajes aún
+                                        </h3>
+
+                                        {/* Mensaje descriptivo */}
+                                        <p
+                                            className="text-sm sm:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto px-4"
+                                            style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                        >
+                                            Cuando realices tu primer viaje con Movitex, aparecerá aquí tu historial completo.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    /* Lista de reservas */
+                                    <div className="space-y-4">
+                                        {reservas.map((reserva, index) => (
+                                                <div key={reserva.idReserva} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                                    {/* Header de la tarjeta */}
+                                                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-10 h-10 bg-[#f0251f] rounded-full flex items-center justify-center text-white font-bold">
+                                                                    {index + 1}
+                                                                </div>
+                                                                <div>
+                                                                    <h3 
+                                                                        className="font-bold text-gray-800 text-lg"
+                                                                        style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                    >
+                                                                        {reserva.origen} → {reserva.destino}
+                                                                    </h3>
+                                                                    <p 
+                                                                        className="text-sm text-gray-600"
+                                                                        style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                    >
+                                                                        {reserva.fechaViajeFormateada}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-2 sm:mt-0 text-right">
+                                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                    Completado
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Contenido de la tarjeta */}
+                                                    <div className="p-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                            {/* Fecha y hora */}
+                                                            <div className="space-y-1">
+                                                                <p 
+                                                                    className="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    Fecha y Hora
+                                                                </p>
+                                                                <p 
+                                                                    className="text-sm font-semibold text-gray-800"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    {reserva.horaSalidaFormateada}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Servicio */}
+                                                            <div className="space-y-1">
+                                                                <p 
+                                                                    className="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    Servicio
+                                                                </p>
+                                                                <p 
+                                                                    className="text-sm font-semibold text-[#f0251f]"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    {reserva.tipoServicioFormateado}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Pasajeros */}
+                                                            <div className="space-y-1">
+                                                                <p 
+                                                                    className="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    Pasajeros
+                                                                </p>
+                                                                <p 
+                                                                    className="text-sm font-semibold text-gray-800"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    {reserva.totalPasajeros} {reserva.totalPasajeros === 1 ? 'persona' : 'personas'}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Total pagado */}
+                                                            <div className="space-y-1">
+                                                                <p 
+                                                                    className="text-xs font-medium text-gray-500 uppercase tracking-wide"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    Total Pagado
+                                                                </p>
+                                                                <p 
+                                                                    className="text-lg font-bold text-green-600"
+                                                                    style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                >
+                                                                    S/. {reserva.totalPagado.toFixed(2)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Footer con fecha de reserva */}
+                                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                                                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                    <span style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                                                                        Reservado el {reserva.fechaReservaFormateada}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-2 sm:mt-0">
+                                                                    <span 
+                                                                        className="text-xs text-gray-500 font-mono"
+                                                                        style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                                                                    >
+                                                                        ID: {reserva.idReserva.slice(0, 8)}...
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </>
                 );
             case 'promociones':
@@ -361,7 +571,7 @@ const MiCuenta = () => {
                 </div>
                 <div className="-mt-4 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden mx-4 mb-6">
                     {/* Navegación en pestañas (móvil) y sidebar (desktop) */}
-                    <div className="flex flex-col lg:flex-row min-h-[300px]">
+                    <div className="flex flex-col lg:flex-row min-h-[700px]">
                         {/* Pestañas horizontales para móvil */}
                         <div className="lg:hidden border-b border-gray-200">
                             <div className="flex overflow-x-auto scrollbar-hide">
@@ -518,7 +728,7 @@ const MiCuenta = () => {
                         </div>
 
                         {/* Sección de contenido */}
-                        <div className="flex-1 p-4 sm:p-6">
+                        <div className="flex-1 p-4 sm:p-6 overflow-auto max-h-[650px]">
                             {renderContent()}
                         </div>
                     </div>
