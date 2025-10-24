@@ -53,7 +53,9 @@ export const ViajesProvider = ({ children }) => {
         anguloPiso1: viaje.angulo_piso1,
         anguloPiso2: viaje.angulo_piso2,
         precioMinimo: parseFloat(viaje.precio_minimo),
-        asientosDisponibles: parseInt(viaje.asientos_disponibles)
+        asientosDisponibles: parseInt(viaje.asientos_disponibles),
+        ciudadOrigen: viaje.origen,
+        ciudadDestino: viaje.destino,
       })) || [];
 
 

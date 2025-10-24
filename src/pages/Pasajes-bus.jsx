@@ -5,6 +5,7 @@ import Lottie from 'lottie-react';
 import { useViajes } from '../context/ViajesContext';
 import Navbar from '../components/Pasajes-bus/Navbar';
 import Bus from '../components/Pasajes-bus/Bus';
+import DetallesViajeModal from '../components/Pasajes-bus/DetallesViajeModal';
 import BusLoadingAnimation from '../lottiefiles/BusLoading.json';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
@@ -25,6 +26,10 @@ const PasajesBus = () => {
   
   // Estado para controlar qué viaje tiene los asientos expandidos
   const [viajeExpandido, setViajeExpandido] = useState(null);
+  
+  // Estado para controlar el modal de detalles
+  const [modalDetallesAbierto, setModalDetallesAbierto] = useState(false);
+  const [viajeSeleccionado, setViajeSeleccionado] = useState(null);
   
   // Estados para filtros
   const [servicios, setServicios] = useState({
@@ -240,9 +245,24 @@ const PasajesBus = () => {
             </div>
 
             {/* Footer - Responsive */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm mt-2 border-t border-gray-200 pt-2 space-y-2 sm:space-y-0" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm mt-2 border-t border-gray-200 pt-2 items-center" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+              {/* Asientos restantes */}
               <span className='text-gray-500 text-center sm:text-left'>{viaje.asientosDisponibles} Asientos restantes</span>
-              <div className="flex items-center justify-between sm:justify-center sm:space-x-4">
+              
+              {/* Ver detalles - centrado */}
+              <button 
+                onClick={() => {
+                  setViajeSeleccionado(viaje);
+                  setModalDetallesAbierto(true);
+                }}
+                className="text-[#f0251f] cursor-pointer hover:text-[#d01f1b] font-medium underline transition-colors text-center order-last sm:order-none"
+                style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
+              >
+                Ver detalles
+              </button>
+              
+              {/* Duración e iconos */}
+              <div className="flex items-center justify-between sm:justify-end sm:space-x-4">
                 <div className="flex items-center space-x-1 text-gray-800">
                   <Clock size={14} className="sm:w-4 sm:h-4" />
                   <span>{formatearDuracion(viaje.duracionEstimada)}</span>
@@ -798,6 +818,16 @@ const PasajesBus = () => {
         )}
       </div>
       </div>
+      
+      {/* Modal de Detalles del Viaje */}
+      <DetallesViajeModal 
+        isOpen={modalDetallesAbierto}
+        onClose={() => {
+          setModalDetallesAbierto(false);
+          setViajeSeleccionado(null);
+        }}
+        viaje={viajeSeleccionado}
+      />
     </>
   );
 };
