@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import Navbar from '../components/Reserva/Navbar';
+import Footer from '../components/Footer';
 import { useReserva } from '../context/ReservaContext';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
@@ -476,8 +477,6 @@ const Reserva = () => {
                       <span className="text-sm sm:text-base">PAGAR</span>
                     )}
                   </button>
-
-
                 </div>
               </div>
             </div>
@@ -490,8 +489,10 @@ const Reserva = () => {
                 </h3>
 
                 <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>IDA</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+                      IDA
+                    </span>
                     <span className="px-2 py-1 bg-[#f0251f] text-white text-xs font-semibold rounded" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                       IDA
                     </span>
@@ -736,6 +737,9 @@ const Reserva = () => {
           </div>
         </div>
       )}
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

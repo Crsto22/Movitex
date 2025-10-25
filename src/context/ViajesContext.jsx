@@ -1,5 +1,23 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '../supabase/supabase';
+import ImgIca from "../img/Ica.jpg"
+import ImgArequipa from "../img/Arequipa.jpg"
+import ImgCusco from "../img/Cuzco.jpg"
+
+// Función para obtener imagen según el destino
+const obtenerImagenDestino = (destino) => {
+  const destinoLower = destino.toLowerCase();
+  
+  if (destinoLower.includes('arequipa')) {
+    return ImgArequipa;
+  } else if (destinoLower.includes('ica')) {
+    return ImgIca;
+  } else if (destinoLower.includes('cusco') || destinoLower.includes('cuzco')) {
+    return ImgCusco;
+  }
+  
+  return null; // Sin imagen por defecto
+};
 
 // Crear el Context
 const ViajesContext = createContext();
@@ -16,7 +34,9 @@ export const useViajes = () => {
 // Provider del Context
 export const ViajesProvider = ({ children }) => {
   const [viajes, setViajes] = useState([]);
+  const [rutasUnicas, setRutasUnicas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingRutas, setLoadingRutas] = useState(true);
   const [error, setError] = useState(null);
 
   // Función para buscar viajes disponibles
@@ -83,17 +103,65 @@ export const ViajesProvider = ({ children }) => {
     setError(null);
   }, []);
 
+  // Función para obtener viajes por ruta única
+  const obtenerRutasUnicas = useCallback(async () => {
+    try {
+      setLoadingRutas(true);
+      setError(null);
+
+      // Llamar a la función SQL usando RPC
+      const { data, error: supabaseError } = await supabase.rpc('obtener_viajes_por_ruta_unica');
+
+      if (supabaseError) {
+        console.error('Error en Supabase:', supabaseError);
+        throw supabaseError;
+      }
+
+      // Agregar imágenes según el destino
+      const rutasConImagenes = data?.map(viaje => ({
+        ...viaje,
+        imagen: obtenerImagenDestino(viaje.destino)
+      })) || [];
+
+      // Guardar en el estado
+      setRutasUnicas(rutasConImagenes);
+
+      // Mostrar en consola para debug
+      console.log('✅ Rutas únicas cargadas:', rutasConImagenes.length);
+      rutasConImagenes.forEach(viaje => {
+        console.log(`${viaje.origen} → ${viaje.destino} (${viaje.fecha})`);
+      });
+
+      return rutasConImagenes;
+      
+    } catch (err) {
+      console.error('❌ Error al obtener rutas únicas:', err);
+      setError(err.message || 'Error al obtener rutas disponibles');
+      return [];
+    } finally {
+      setLoadingRutas(false);
+    }
+  }, []);
+
+  // Cargar rutas únicas al montar el componente (solo una vez)
+  useEffect(() => {
+    obtenerRutasUnicas();
+  }, [obtenerRutasUnicas]);
+
   // Valor del contexto que se proporcionará a los componentes hijos
   const value = {
     // Estados
     viajes,
+    rutasUnicas,
     loading,
+    loadingRutas,
     error,
     
     // Funciones
     buscarViajes,
     limpiarViajes,
-    limpiarError
+    limpiarError,
+    obtenerRutasUnicas
   };
 
   return (

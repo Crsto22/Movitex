@@ -1,6 +1,6 @@
 import Navbar from '../components/Navbar';
 import Hero from '../components/Inicio/Hero';
-import DestinosPopulares from '../components/Inicio/DestinosPopulares';
+import DestinosDisponibles from '../components/Inicio/DestinosDisponibles';
 import Footer from '../components/Footer';
 
 const Inicio = () => {
@@ -8,7 +8,7 @@ const Inicio = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       <Hero />
-      <DestinosPopulares />
+      <DestinosDisponibles />
       <Footer />
     </div>
   );

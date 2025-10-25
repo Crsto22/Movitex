@@ -6,6 +6,7 @@ import { useViajes } from '../context/ViajesContext';
 import Navbar from '../components/Pasajes-bus/Navbar';
 import Bus from '../components/Pasajes-bus/Bus';
 import DetallesViajeModal from '../components/Pasajes-bus/DetallesViajeModal';
+import Footer from '../components/Footer';
 import BusLoadingAnimation from '../lottiefiles/BusLoading.json';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
@@ -828,6 +829,9 @@ const PasajesBus = () => {
         }}
         viaje={viajeSeleccionado}
       />
+
+      {/* Footer */}
+      <Footer />
     </>
   );
 };

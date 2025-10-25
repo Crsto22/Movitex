@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCiudades } from '../../context/CiudadesContext';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
@@ -550,13 +551,13 @@ const Navbar = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="flex items-center">
+              <Link to="/inicio" className="flex items-center cursor-pointer">
                 <img 
                   src={Logo} 
                   alt="Movitex Logo" 
                   className="h-8 object-contain"
                 />
-              </div>
+              </Link>
             </div>
 
             {/* Icono circular y botón hamburguesa */}
@@ -930,7 +931,9 @@ const Navbar = () => {
           
           <div className="absolute top-0 right-0 h-full w-4/5 max-w-sm bg-white shadow-2xl transform transition-transform duration-300">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <img src={Logo} alt="Movitex" className="h-8" />
+              <Link to="/inicio" onClick={toggleMenu}>
+                <img src={Logo} alt="Movitex" className="h-8 cursor-pointer" />
+              </Link>
               <button onClick={toggleMenu} className="w-10 h-10 flex items-center justify-center rounded-full transition-colors hover:bg-gray-100">
                 <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

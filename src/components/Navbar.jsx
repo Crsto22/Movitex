@@ -126,14 +126,13 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo y texto */}
           <div className="flex items-center space-x-3">
-            <div className="flex items-center">
+            <Link to="/inicio" className="flex items-center cursor-pointer">
               <img 
                 src={Logo} 
                 alt="Movitex Logo" 
                 className="h-8  object-contain"
               />
-             
-            </div>
+            </Link>
           </div>
 
           {/* Menú desktop */}
@@ -284,7 +283,9 @@ const Navbar = () => {
           >
             {/* Header del menú */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <img src={Logo} alt="Movitex" className="h-8" />
+              <Link to="/inicio" onClick={toggleMenu}>
+                <img src={Logo} alt="Movitex" className="h-8 cursor-pointer" />
+              </Link>
               <button
                 onClick={toggleMenu}
                 className="w-10 h-10 flex items-center justify-center rounded-full transition-colors hover:bg-gray-100"

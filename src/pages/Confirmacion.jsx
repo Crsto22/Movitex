@@ -16,6 +16,7 @@ import {
 import Confetti from "react-canvas-confetti";
 import Lottie from "lottie-react";
 import Navbar from "../components/Reserva/Navbar";
+import Footer from "../components/Footer";
 import { useReserva } from "../context/ReservaContext";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -573,6 +574,9 @@ const Confirmacion = () => {
         </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
