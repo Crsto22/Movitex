@@ -1,10 +1,13 @@
+// contexto de viajes - maneja la busqueda y consulta de viajes disponibles
+// consulta el backend para obtener viajes con disponibilidad de asientos
+
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '../supabase/supabase';
 import ImgIca from "../img/Ica.jpg"
 import ImgArequipa from "../img/Arequipa.jpg"
 import ImgCusco from "../img/Cuzco.jpg"
 
-// Función para obtener imagen según el destino
+// funcion auxiliar para asignar imagenes a cada destino
 const obtenerImagenDestino = (destino) => {
   const destinoLower = destino.toLowerCase();
   
@@ -16,10 +19,9 @@ const obtenerImagenDestino = (destino) => {
     return ImgCusco;
   }
   
-  return null; // Sin imagen por defecto
+  return null; // sin imagen por defecto
 };
 
-// Crear el Context
 const ViajesContext = createContext();
 
 // Hook personalizado para usar el Context
@@ -31,17 +33,19 @@ export const useViajes = () => {
   return context;
 };
 
-// Provider del Context
+// proveedor del contexto
 export const ViajesProvider = ({ children }) => {
-  const [viajes, setViajes] = useState([]);
-  const [rutasUnicas, setRutasUnicas] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingRutas, setLoadingRutas] = useState(true);
-  const [error, setError] = useState(null);
+  // estados para manejar viajes y busquedas
+  const [viajes, setViajes] = useState([]);                 // viajes encontrados en busqueda
+  const [rutasUnicas, setRutasUnicas] = useState([]);       // rutas disponibles para mostrar
+  const [loading, setLoading] = useState(false);            // carga de busqueda
+  const [loadingRutas, setLoadingRutas] = useState(true);   // carga de rutas
+  const [error, setError] = useState(null);                 // errores de consulta
 
-  // Función para buscar viajes disponibles
+  // funcion principal: buscar viajes disponibles
+  // envia origen, destino y fecha al backend para buscar viajes
   const buscarViajes = useCallback(async (origen, destino, fecha) => {
-    // Validar parámetros de entrada
+    // validar que se proporcionaron todos los datos
     if (!origen || !destino || !fecha) {
       setError('Todos los campos son obligatorios: origen, destino y fecha');
       return;
@@ -51,7 +55,9 @@ export const ViajesProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Llamar a la función SQL usando RPC (Remote Procedure Call)
+      // peticion al backend: ejecutar funcion sql compleja
+      // el backend hace joins entre: viajes, ciudades, asientos
+      // calcula: precio minimo, asientos disponibles, duracion
       const { data, error: supabaseError } = await supabase.rpc('buscar_viajes_disponibles', {
         p_origen: origen,
         p_destino: destino,
@@ -63,7 +69,7 @@ export const ViajesProvider = ({ children }) => {
         throw supabaseError;
       }
 
-      // Transformar los datos para mejor uso en el frontend
+      // transformar datos del backend para mostrar en la interfaz
       const viajesFormateados = data?.map(viaje => ({
         idViaje: viaje.id_viaje,
         tipoServicio: viaje.tipo_servicio,
@@ -79,6 +85,7 @@ export const ViajesProvider = ({ children }) => {
       })) || [];
 
 
+      // guardar viajes encontrados en el estado
       setViajes(viajesFormateados);
       
     } catch (err) {
@@ -92,24 +99,27 @@ export const ViajesProvider = ({ children }) => {
     }
   }, []);
 
-  // Función para limpiar los resultados
+  // funcion para limpiar resultados de busqueda
+  // se usa cuando el usuario hace una nueva busqueda
   const limpiarViajes = useCallback(() => {
     setViajes([]);
     setError(null);
   }, []);
 
-  // Función para limpiar solo el error
+  // funcion para limpiar mensajes de error
   const limpiarError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Función para obtener viajes por ruta única
+  // funcion para obtener rutas populares
+  // consulta el backend para traer una ruta por cada origen-destino
   const obtenerRutasUnicas = useCallback(async () => {
     try {
       setLoadingRutas(true);
       setError(null);
 
-      // Llamar a la función SQL usando RPC
+      // peticion al backend: obtener rutas unicas con precio minimo
+      // el backend agrupa viajes por origen-destino
       const { data, error: supabaseError } = await supabase.rpc('obtener_viajes_por_ruta_unica');
 
       if (supabaseError) {
@@ -117,19 +127,19 @@ export const ViajesProvider = ({ children }) => {
         throw supabaseError;
       }
 
-      // Agregar imágenes según el destino
+      // agregar imagenes a cada ruta segun el destino
       const rutasConImagenes = data?.map(viaje => ({
         ...viaje,
         imagen: obtenerImagenDestino(viaje.destino)
       })) || [];
 
-      // Guardar en el estado
+      // guardar rutas en el estado
       setRutasUnicas(rutasConImagenes);
 
       // Mostrar en consola para debug
-      console.log('✅ Rutas únicas cargadas:', rutasConImagenes.length);
+      
       rutasConImagenes.forEach(viaje => {
-        console.log(`${viaje.origen} → ${viaje.destino} (${viaje.fecha})`);
+        
       });
 
       return rutasConImagenes;
@@ -143,25 +153,25 @@ export const ViajesProvider = ({ children }) => {
     }
   }, []);
 
-  // Cargar rutas únicas al montar el componente (solo una vez)
+  // cargar rutas automaticamente al iniciar la aplicacion
   useEffect(() => {
     obtenerRutasUnicas();
   }, [obtenerRutasUnicas]);
 
-  // Valor del contexto que se proporcionará a los componentes hijos
+  // valores y funciones que se comparten con toda la aplicacion
   const value = {
-    // Estados
-    viajes,
-    rutasUnicas,
-    loading,
-    loadingRutas,
-    error,
+    // estados
+    viajes,                     // viajes encontrados en busqueda
+    rutasUnicas,                // rutas populares disponibles
+    loading,                    // carga de busqueda
+    loadingRutas,               // carga de rutas
+    error,                      // mensajes de error
     
-    // Funciones
-    buscarViajes,
-    limpiarViajes,
-    limpiarError,
-    obtenerRutasUnicas
+    // funciones
+    buscarViajes,               // buscar viajes por origen, destino, fecha
+    limpiarViajes,              // limpiar resultados de busqueda
+    limpiarError,               // limpiar errores
+    obtenerRutasUnicas          // obtener rutas populares
   };
 
   return (

@@ -1,7 +1,9 @@
+// contexto de ciudades - maneja el catalogo de ciudades disponibles
+// consulta el backend para obtener, crear, actualizar y eliminar ciudades
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabase/supabase';
 
-// Crear el contexto
 const CiudadesContext = createContext();
 
 // Hook personalizado para usar el contexto
@@ -13,18 +15,21 @@ export const useCiudades = () => {
   return context;
 };
 
-// Proveedor del contexto
+// proveedor del contexto
 export const CiudadesProvider = ({ children }) => {
-  const [ciudades, setCiudades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // estados para manejar ciudades
+  const [ciudades, setCiudades] = useState([]);     // lista de todas las ciudades
+  const [loading, setLoading] = useState(true);     // estado de carga
+  const [error, setError] = useState(null);         // errores de consulta
 
-  // Función para obtener todas las ciudades
+  // funcion para obtener todas las ciudades desde el backend
+  // consulta: SELECT * FROM ciudades ORDER BY nombre ASC
   const fetchCiudades = async () => {
     try {
       setLoading(true);
       setError(null);
       
+      // peticion al backend: obtener todas las ciudades ordenadas alfabeticamente
       const { data, error: fetchError } = await supabase
         .from('ciudades')
         .select('*')
@@ -34,8 +39,9 @@ export const CiudadesProvider = ({ children }) => {
         throw new Error(fetchError.message);
       }
 
+      // guardar ciudades en el estado
       setCiudades(data || []);
-      console.log('✅ Ciudades cargadas correctamente:', data?.length || 0);
+
 
       return {
         success: true,
@@ -44,7 +50,7 @@ export const CiudadesProvider = ({ children }) => {
       };
 
     } catch (error) {
-      console.error('❌ Error al cargar ciudades:', error);
+      console.error('Error al cargar ciudades:', error);
       setError(error.message);
       
       return {
@@ -57,12 +63,14 @@ export const CiudadesProvider = ({ children }) => {
     }
   };
 
-  // Función para obtener una ciudad por ID
+  // funcion para buscar una ciudad por su id
+  // busca en la lista local (no hace peticion al backend)
   const getCiudadById = (id) => {
     return ciudades.find(ciudad => ciudad.id_ciudad === id) || null;
   };
 
-  // Función para buscar ciudades por nombre
+  // funcion para buscar ciudades por nombre
+  // filtra la lista local (no hace peticion al backend)
   const searchCiudadesByName = (searchTerm) => {
     if (!searchTerm) return ciudades;
     
@@ -71,11 +79,13 @@ export const CiudadesProvider = ({ children }) => {
     );
   };
 
-  // Función para agregar una nueva ciudad (opcional para funcionalidades futuras)
+  // funcion para agregar una nueva ciudad al catalogo
+  // envia peticion al backend para insertar en la base de datos
   const addCiudad = async (nombreCiudad) => {
     try {
       setLoading(true);
       
+      // peticion al backend: INSERT INTO ciudades (nombre) VALUES (?)
       const { data, error } = await supabase
         .from('ciudades')
         .insert([{ nombre: nombreCiudad.trim() }])
@@ -86,10 +96,10 @@ export const CiudadesProvider = ({ children }) => {
         throw new Error(error.message);
       }
 
-      // Actualizar el estado local
+      // actualizar lista local con la nueva ciudad
       setCiudades(prevCiudades => [...prevCiudades, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       
-      console.log('✅ Ciudad agregada correctamente:', data);
+      
 
       return {
         success: true,
@@ -115,11 +125,13 @@ export const CiudadesProvider = ({ children }) => {
     }
   };
 
-  // Función para actualizar una ciudad (opcional para funcionalidades futuras)
+  // funcion para actualizar el nombre de una ciudad
+  // envia peticion al backend para actualizar en la base de datos
   const updateCiudad = async (id, nuevoNombre) => {
     try {
       setLoading(true);
       
+      // peticion al backend: UPDATE ciudades SET nombre = ? WHERE id_ciudad = ?
       const { data, error } = await supabase
         .from('ciudades')
         .update({ nombre: nuevoNombre.trim() })
@@ -131,14 +143,14 @@ export const CiudadesProvider = ({ children }) => {
         throw new Error(error.message);
       }
 
-      // Actualizar el estado local
+      // actualizar lista local con los nuevos datos
       setCiudades(prevCiudades => 
         prevCiudades.map(ciudad => 
           ciudad.id_ciudad === id ? data : ciudad
         ).sort((a, b) => a.nombre.localeCompare(b.nombre))
       );
       
-      console.log('✅ Ciudad actualizada correctamente:', data);
+      
 
       return {
         success: true,
@@ -164,11 +176,13 @@ export const CiudadesProvider = ({ children }) => {
     }
   };
 
-  // Función para eliminar una ciudad (opcional para funcionalidades futuras)
+  // funcion para eliminar una ciudad del catalogo
+  // envia peticion al backend para eliminar de la base de datos
   const deleteCiudad = async (id) => {
     try {
       setLoading(true);
       
+      // peticion al backend: DELETE FROM ciudades WHERE id_ciudad = ?
       const { error } = await supabase
         .from('ciudades')
         .delete()
@@ -178,10 +192,10 @@ export const CiudadesProvider = ({ children }) => {
         throw new Error(error.message);
       }
 
-      // Actualizar el estado local
+      // actualizar lista local removiendo la ciudad eliminada
       setCiudades(prevCiudades => prevCiudades.filter(ciudad => ciudad.id_ciudad !== id));
       
-      console.log('✅ Ciudad eliminada correctamente');
+      
 
       return {
         success: true,
@@ -206,22 +220,22 @@ export const CiudadesProvider = ({ children }) => {
     }
   };
 
-  // Cargar ciudades al montar el componente
+  // cargar ciudades automaticamente al iniciar la aplicacion
   useEffect(() => {
     fetchCiudades();
   }, []);
 
-  // Valor del contexto
+  // valores y funciones que se comparten con toda la aplicacion
   const value = {
-    ciudades,
-    loading,
-    error,
-    fetchCiudades,
-    getCiudadById,
-    searchCiudadesByName,
-    addCiudad,
-    updateCiudad,
-    deleteCiudad
+    ciudades,                   // lista de ciudades
+    loading,                    // estado de carga
+    error,                      // mensajes de error
+    fetchCiudades,              // obtener ciudades del backend
+    getCiudadById,              // buscar ciudad por id
+    searchCiudadesByName,       // buscar ciudades por nombre
+    addCiudad,                  // agregar nueva ciudad
+    updateCiudad,               // actualizar ciudad existente
+    deleteCiudad                // eliminar ciudad
   };
 
   return (

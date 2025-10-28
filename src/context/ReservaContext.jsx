@@ -1,3 +1,6 @@
+// contexto de reservas - maneja todo el proceso de reserva de pasajes
+// gestiona: seleccion de asientos, datos de pasajeros, pago, y creacion de reserva en el backend
+
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDNIData, validateDNI } from '../services/dniService'
@@ -19,44 +22,45 @@ export const useReserva = () => {
 export const ReservaProvider = ({ children }) => {
   const navigate = useNavigate()
 
-  // Estados para cronómetro
-  const [tiempoRestante, setTiempoRestante] = useState(0)
-  const [mostrarModalTiempo, setMostrarModalTiempo] = useState(false)
+  // Estados del cronómetro de reserva (15 minutos para completar)
+  const [tiempoRestante, setTiempoRestante] = useState(0)           // tiempo restante en milisegundos
+  const [mostrarModalTiempo, setMostrarModalTiempo] = useState(false) // mostrar aviso de tiempo agotado
 
-  // Estados para datos de reserva
-  const [asientosReservados, setAsientosReservados] = useState([])
-  const [totalPrecio, setTotalPrecio] = useState(0)
-  const [idViaje, setIdViaje] = useState(null)
-  const [datosViaje, setDatosViaje] = useState(null)
+  // Estados de la reserva actual
+  const [asientosReservados, setAsientosReservados] = useState([])  // asientos seleccionados por el usuario
+  const [totalPrecio, setTotalPrecio] = useState(0)                 // precio total de la reserva
+  const [idViaje, setIdViaje] = useState(null)                      // id del viaje seleccionado
+  const [datosViaje, setDatosViaje] = useState(null)                // informacion completa del viaje
 
-  // Estados del formulario
-  const [pasajeros, setPasajeros] = useState([])
-  const [correo, setCorreo] = useState('')
-  const [confirmacionCorreo, setConfirmacionCorreo] = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [codigoPromocional, setCodigoPromocional] = useState('')
-  const [metodoPago, setMetodoPago] = useState('')
-  const [aceptaPoliticas, setAceptaPoliticas] = useState(false)
+  // Estados del formulario de pasajeros
+  const [pasajeros, setPasajeros] = useState([])                    // datos de cada pasajero
+  const [correo, setCorreo] = useState('')                          // correo de contacto
+  const [confirmacionCorreo, setConfirmacionCorreo] = useState('')  // confirmacion de correo
+  const [telefono, setTelefono] = useState('')                      // telefono de contacto
+  const [codigoPromocional, setCodigoPromocional] = useState('')    // codigo de descuento
+  const [metodoPago, setMetodoPago] = useState('')                  // metodo de pago seleccionado
+  const [aceptaPoliticas, setAceptaPoliticas] = useState(false)     // aceptacion de terminos
 
-  // Estados para manejo de DNI
-  const [loadingDNI, setLoadingDNI] = useState({})
-  const [inicializado, setInicializado] = useState(false)
-  const timeoutRefs = useRef({})
+  // Estados para consulta de dni (api externa)
+  const [loadingDNI, setLoadingDNI] = useState({})                  // estado de carga por pasajero
+  const [inicializado, setInicializado] = useState(false)           // si ya se cargo la reserva
+  const timeoutRefs = useRef({})                                    // timeouts para busqueda de dni
 
-  // Estados para proceso de pago
-  const [procesandoPago, setProcesandoPago] = useState(false)
-  const [errorPago, setErrorPago] = useState(null)
-  const [reservaExitosa, setReservaExitosa] = useState(null)
+  // Estados del proceso de pago y creacion de reserva
+  const [procesandoPago, setProcesandoPago] = useState(false)       // si esta procesando el pago
+  const [errorPago, setErrorPago] = useState(null)                  // errores en el proceso
+  const [reservaExitosa, setReservaExitosa] = useState(null)        // datos de reserva exitosa
 
-  // Estados para datos de boleta
-  const [datosBoleta, setDatosBoleta] = useState(null)
-  const [cargandoBoleta, setCargandoBoleta] = useState(false)
-  const [errorBoleta, setErrorBoleta] = useState(null)
+  // Estados para la boleta de viaje
+  const [datosBoleta, setDatosBoleta] = useState(null)              // datos de la boleta
+  const [cargandoBoleta, setCargandoBoleta] = useState(false)       // cargando boleta
+  const [errorBoleta, setErrorBoleta] = useState(null)              // errores al obtener boleta
 
   // Función para inicializar reserva desde sessionStorage
   const inicializarReserva = useCallback((allowEmpty = false, forzarReinicio = false, nuevosAsientos = null, nuevoIdViaje = null, nuevoDatosViaje = null, nuevoTotal = null, nuevoCronometro = null) => {
     // Si hay datos nuevos que requieren reinicio, usar la función de reinicio
     if (forzarReinicio && nuevosAsientos && nuevoIdViaje !== null) {
+      console.log(' Forzando reinicio con nuevos datos de asientos')
       console.log('🔄 Forzando reinicio con nuevos datos de asientos')
       reiniciarReservaConNuevosDatos(nuevosAsientos, nuevoIdViaje, nuevoDatosViaje, nuevoTotal, nuevoCronometro)
       return true
@@ -606,24 +610,25 @@ export const ReservaProvider = ({ children }) => {
     }
   }, [])
 
-  // Función para verificar si hay usuario logueado
+  // funcion para verificar si hay usuario logueado
   const isUserLoggedIn = () => {
     const userData = localStorage.getItem('movitex_user_data')
     return userData !== null
   }
 
-  // Función para crear reserva completa (logueado o anónimo)
+  // funcion principal: crear reserva en el backend
+  // maneja dos casos: usuarios logueados y usuarios anonimos
   const crearReserva = useCallback(async () => {
-    if (procesandoPago) return // Evitar doble procesamiento
+    if (procesandoPago) return // evitar doble procesamiento
 
     try {
       setProcesandoPago(true)
       setErrorPago(null)
 
-      // Obtener ID del usuario desde localStorage
+      // obtener id del usuario desde localstorage
       let userId = localStorage.getItem('id_usuario')
       
-      // Si no hay id_usuario directamente, intentar obtenerlo de movitex_user_data
+      // si no hay id_usuario directamente, intentar obtenerlo de movitex_user_data
       if (!userId) {
         const userData = localStorage.getItem('movitex_user_data')
         if (userData) {
@@ -632,10 +637,10 @@ export const ReservaProvider = ({ children }) => {
         }
       }
 
-      // Determinar si es usuario logueado o anónimo
+      // determinar si es usuario logueado o anonimo
       const esUsuarioLogueado = !!userId
 
-      // Validar que tengamos todos los datos necesarios
+      // validar que tengamos todos los datos necesarios
       if (!asientosReservados.length || !pasajeros.length) {
         throw new Error('No hay datos de reserva disponibles')
       }
@@ -652,7 +657,7 @@ export const ReservaProvider = ({ children }) => {
         throw new Error('Debe aceptar las políticas de privacidad')
       }
 
-      // Validar datos de pasajeros
+      // validar datos de pasajeros
       for (let i = 0; i < pasajeros.length; i++) {
         const pasajero = pasajeros[i]
         if (!pasajero.numeroDocumento || !pasajero.nombre || !pasajero.apellido || 
@@ -661,9 +666,9 @@ export const ReservaProvider = ({ children }) => {
         }
       }
 
-      // Preparar array de pasajeros en el formato que espera la función SQL
+      // preparar array de pasajeros en el formato que espera la funcion sql
       const pasajerosParaSQL = pasajeros.map((pasajero, index) => {
-        // Validar cada campo individualmente
+        // validar cada campo individualmente
         const pasajeroSQL = {
           numeroDocumento: pasajero.numeroDocumento?.toString() || '',
           nombre: pasajero.nombre?.toString() || '',
@@ -677,11 +682,12 @@ export const ReservaProvider = ({ children }) => {
         return pasajeroSQL
       })
 
-      console.log('� Estructura de pasajeros para SQL:', JSON.stringify(pasajerosParaSQL, null, 2))
+      console.log('📋 Estructura de pasajeros para SQL:', JSON.stringify(pasajerosParaSQL, null, 2))
 
       let data, error
 
-      // ✅ USUARIOS LOGUEADOS: Usar función crear_reserva_usuario_logueado
+      // caso 1: usuarios logueados
+      // peticion al backend: ejecutar funcion sql crear_reserva_usuario_logueado
       if (esUsuarioLogueado) {
         console.log('🔐 Creando reserva para usuario logueado:', userId)
         console.log('🚀 Datos de reserva logueado:', {
@@ -691,6 +697,7 @@ export const ReservaProvider = ({ children }) => {
           pasajeros: pasajerosParaSQL
         })
         
+        // el backend: crea reserva, inserta pasajeros, actualiza asientos, genera boleta
         const response = await supabase.rpc('crear_reserva_usuario_logueado', {
           p_id_usuario: userId,
           p_id_viaje: idViaje,
@@ -701,11 +708,12 @@ export const ReservaProvider = ({ children }) => {
         data = response.data
         error = response.error
       } 
-      // ✅ USUARIOS ANÓNIMOS: Usar función crear_reserva_anonima
+      // caso 2: usuarios anonimos
+      // peticion al backend: ejecutar funcion sql crear_reserva_anonima
       else {
-        console.log('� Creando reserva para usuario anónimo')
+        console.log('👤 Creando reserva para usuario anonimo')
         
-        // Para anónimos necesitamos correo y teléfono obligatorios
+        // para anonimos necesitamos correo y telefono obligatorios
         if (!correo || correo.trim() === '') {
           throw new Error('El correo electrónico es obligatorio para continuar con la reserva')
         }
@@ -714,7 +722,7 @@ export const ReservaProvider = ({ children }) => {
           throw new Error('El teléfono es obligatorio para continuar con la reserva')
         }
 
-        console.log('🚀 Datos de reserva anónima:', {
+        console.log('🚀 Datos de reserva anonima:', {
           idViaje,
           totalPrecio,
           pasajeros: pasajerosParaSQL,
@@ -722,6 +730,7 @@ export const ReservaProvider = ({ children }) => {
           telefono: telefono.trim()
         })
 
+        // el backend: crea reserva, inserta pasajeros, actualiza asientos, genera boleta
         const response = await supabase.rpc('crear_reserva_anonima', {
           p_id_viaje: idViaje,
           p_total_pagado: totalPrecio,
@@ -746,14 +755,14 @@ export const ReservaProvider = ({ children }) => {
       const resultado = data[0]
       console.log('✅ Reserva creada exitosamente:', resultado)
 
-      // Guardar datos de la reserva exitosa
+      // guardar datos de la reserva exitosa
       setReservaExitosa({
         id_reserva: resultado.id_reserva,
         mensaje: resultado.mensaje,
         total_pasajeros: resultado.total_pasajeros,
         total_asientos: resultado.total_asientos,
         metodoPago: metodoPago,
-        // Agregar datos adicionales para la página de confirmación
+        // agregar datos adicionales para la pagina de confirmacion
         correo: correo,
         telefono: telefono,
         datosViaje: datosViaje,
@@ -761,18 +770,18 @@ export const ReservaProvider = ({ children }) => {
         totalPrecio: totalPrecio
       })
 
-      console.log('🎯 Navegando a página de confirmación con ID:', resultado.id_reserva)
+      console.log('🎯 Navegando a pagina de confirmacion con ID:', resultado.id_reserva)
       
-      // ✅ LIMPIAR COMPLETAMENTE EL SESSIONSTORAGE TRAS RESERVA EXITOSA
+      // limpiar completamente el sessionstorage tras reserva exitosa
       console.log('🧹 Limpiando sessionStorage tras reserva exitosa...')
       sessionStorage.removeItem('movitex_reserva_completa')
-      sessionStorage.removeItem('movitex_reserva_data') // Por compatibilidad
-      sessionStorage.removeItem('movitex_timer_start') // Por compatibilidad
-      sessionStorage.removeItem('movitex_timer_limit') // Por compatibilidad  
-      sessionStorage.removeItem('movitex_formulario_data') // Por compatibilidad
+      sessionStorage.removeItem('movitex_reserva_data')
+      sessionStorage.removeItem('movitex_timer_start')
+      sessionStorage.removeItem('movitex_timer_limit')
+      sessionStorage.removeItem('movitex_formulario_data')
       console.log('✅ SessionStorage limpiado completamente')
       
-      // Redirigir a página de confirmación usando el ID de la reserva en la URL
+      // redirigir a pagina de confirmacion usando el id de la reserva en la url
       navigate(`/pasajes-bus/confirmacion/${resultado.id_reserva}`)
 
       return resultado
@@ -786,24 +795,26 @@ export const ReservaProvider = ({ children }) => {
     }
   }, [
     procesandoPago, asientosReservados, pasajeros, idViaje, metodoPago, 
-    aceptaPoliticas, totalPrecio, correo, telefono, limpiarReserva, navigate
+    aceptaPoliticas, totalPrecio, correo, telefono, datosViaje, navigate
   ])
 
-  // Función para obtener datos de boleta usando el ID de reserva
+  // Función para obtener datos de boleta desde el backend
+  // Consulta todos los datos de la reserva para mostrar en la boleta
   const obtenerBoletaViaje = useCallback(async (idReserva) => {
     try {
       setCargandoBoleta(true)
       setErrorBoleta(null)
 
-      console.log('🎫 Obteniendo datos de boleta para reserva:', idReserva)
+      console.log(' Obteniendo datos de boleta para reserva:', idReserva)
 
-      // Llamar a la función SQL generar_boleta_viaje
+      // Petición al backend: ejecutar función SQL generar_boleta_viaje
+      // El backend hace joins entre: reservas, pasajeros, viajes, asientos, ciudades
       const { data, error } = await supabase.rpc('generar_boleta_viaje', {
         p_id_reserva: idReserva
       })
 
       if (error) {
-        console.error('❌ Error al obtener datos de boleta:', error)
+        console.error(' Error al obtener datos de boleta:', error)
         throw new Error(`Error al obtener datos de la boleta: ${error.message}`)
       }
 
@@ -811,9 +822,9 @@ export const ReservaProvider = ({ children }) => {
         throw new Error('No se encontraron datos para esta reserva')
       }
 
-      console.log('✅ Datos de boleta obtenidos:', data)
+      console.log(' Datos de boleta obtenidos:', data)
 
-      // Estructurar los datos de la boleta
+      // Estructurar los datos de la boleta para mostrar en la interfaz
       const boletaEstructurada = {
         // Información general del viaje (de cualquier registro, ya que es la misma para todos)
         infoViaje: {
@@ -836,19 +847,20 @@ export const ReservaProvider = ({ children }) => {
         totalPrecio: data.reduce((sum, item) => sum + parseFloat(item.precio), 0)
       }
 
+      // Guardar datos de la boleta en el estado
       setDatosBoleta(boletaEstructurada)
       return boletaEstructurada
 
     } catch (error) {
-      console.error('❌ Error al obtener boleta:', error)
+      console.error(' Error al obtener boleta:', error)
       setErrorBoleta(error.message)
       throw error
     } finally {
       setCargandoBoleta(false)
     }
-  }, []) // Sin dependencias para evitar recreaciones
+  }, [])
 
-  // Función específica para inicializar en páginas de confirmación (sin sessionStorage)
+  // funcion especifica para inicializar en paginas de confirmacion (sin sessionstorage)
   const inicializarParaConfirmacion = useCallback(() => {
     if (!inicializado) {
       setInicializado(true)

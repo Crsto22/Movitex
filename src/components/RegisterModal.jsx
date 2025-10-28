@@ -1,13 +1,23 @@
+// Imports de React: useState para estados, useEffect para efectos, useRef para referencias DOM
 import { useState, useEffect, useRef } from 'react';
+// CSSTransition para animaciones de entrada/salida del modal
 import { CSSTransition } from 'react-transition-group';
+// Iconos de lucide-react para UI del formulario
 import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText, Search, Calendar, Users } from 'lucide-react';
+// Turnstile de Cloudflare para protección CAPTCHA contra bots
 import { Turnstile } from '@marsidev/react-turnstile';
+// Hook personalizado para acceder a funciones de autenticación
 import { useAuth } from '../context/AuthContext';
+// Servicio para consultar y validar DNI (API externa)
 import { getDNIData, validateDNI } from '../services/dniService';
+// Toast para notificaciones al usuario
 import toast from 'react-hot-toast';
 
+// Componente RegisterModal: modal/drawer de registro con autocompletado de DNI
 const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
+  // Desestructurar funciones del contexto de autenticación
   const { registerUser, loading } = useAuth();
+  // Estado del formulario: almacena todos los campos del registro
   const [formData, setFormData] = useState({
     documento: '',
     telefono: '',
@@ -18,16 +28,18 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     fecha_nacimiento: '',
     genero: ''
   });
+  // Estados para UI: mostrar contraseña, token CAPTCHA, y búsqueda de DNI
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState();
   const [turnstileKey, setTurnstileKey] = useState(0);
   const [searchingDNI, setSearchingDNI] = useState(false);
 
-  // Referencias para evitar findDOMNode
+  // Referencias DOM para CSSTransition (evita warnings de findDOMNode)
   const backdropRef = useRef(null);
   const desktopModalRef = useRef(null);
   const mobileModalRef = useRef(null);
 
+  // useEffect para manejar apertura/cierre del modal: bloquea scroll y resetea CAPTCHA
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -46,6 +58,7 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     };
   }, [isOpen]);
 
+  // Actualizar campo del formulario: maneja cambios en inputs
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -53,7 +66,7 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     }));
   };
 
-  // Función para buscar DNI usando el servicio
+  // Buscar DNI en API externa: autocompleta nombre y apellido del usuario
   const searchDNI = async () => {
     const dni = formData.documento.trim();
     
@@ -66,10 +79,11 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     setSearchingDNI(true);
     
     try {
+      // Llamar a API externa para obtener datos del DNI
       const result = await getDNIData(dni);
 
       if (result.success) {
-        // Autocompletar nombre y apellidos
+        // Autocompletar nombre y apellidos en el formulario
         setFormData(prev => ({
           ...prev,
           nombre: result.data.nombre,
@@ -88,10 +102,11 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     }
   };
 
+  // Manejar envío del formulario: valida campos, CAPTCHA y llama a registerUser
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validaciones básicas
+    // Validaciones básicas de campos requeridos
     if (!formData.documento.trim()) {
       toast.error('El número de documento es requerido');
       return;
@@ -133,14 +148,14 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     }
 
     try {
-      // Llamar a la función de registro con el captcha token
+      // Llamar a registerUser del contexto con formData y token CAPTCHA
       const result = await registerUser(formData, captchaToken);
       
       if (result.success) {
-        // Mostrar toast de éxito
+        // Mostrar notificación de éxito
         toast.success(result.message);
         
-        // Limpiar formulario
+        // Limpiar formulario después de registro exitoso
         setFormData({
           documento: '',
           telefono: '',
@@ -156,7 +171,7 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
         onBackToLogin();
         
       } else {
-        // Mostrar toast de error
+        // Mostrar notificación de error
         toast.error(result.message);
         // Resetear captcha después de error para permitir nuevo intento
         setCaptchaToken(undefined);
@@ -172,13 +187,14 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
     }
   };
 
+  // Cerrar modal al hacer clic en el fondo (backdrop)
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
-  // Función para renderizar el contenido del modal/drawer
+  // Renderizar contenido del modal: reutilizable para desktop y mobile
   const renderModalContent = () => (
     <>
       {/* Header del modal */}

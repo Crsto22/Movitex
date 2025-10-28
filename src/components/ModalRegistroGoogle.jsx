@@ -1,13 +1,23 @@
+// Imports de React: useState para estados, useEffect para efectos, useRef para referencias DOM
 import { useState, useEffect, useRef } from 'react';
+// CSSTransition para animaciones de entrada/salida del modal
 import { CSSTransition } from 'react-transition-group';
+// Iconos de lucide-react para UI del formulario
 import { X, User, Phone, FileText, Mail, Search, Calendar, Users } from 'lucide-react';
+// Hook personalizado para acceder a funciones de autenticación
 import { useAuth } from '../context/AuthContext';
+// Servicio para consultar y validar DNI (API externa)
 import { getDNIData, validateDNI } from '../services/dniService';
+// Toast para notificaciones al usuario
 import toast from 'react-hot-toast';
 
+// Componente ModalRegistroGoogle: modal obligatorio para completar datos de usuarios que se registran con Google OAuth
 const ModalRegistroGoogle = ({ isOpen, onClose }) => {
+  // Desestructurar funciones y datos del contexto de autenticación
   const { completeGoogleRegistration, loading, user, userData } = useAuth();
+  // Estado para indicar búsqueda de DNI en progreso
   const [searchingDNI, setSearchingDNI] = useState(false);
+  // Estado del formulario: almacena datos del usuario (algunos pre-llenados desde Google)
   const [formData, setFormData] = useState({
     documento: '',
     telefono: '',
@@ -19,20 +29,21 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     genero: ''
   });
 
-  // Referencias para evitar findDOMNode
+  // Referencias DOM para CSSTransition (evita warnings de findDOMNode)
   const backdropRef = useRef(null);
   const desktopModalRef = useRef(null);
   const mobileModalRef = useRef(null);
 
-  // Prellenar datos desde Google cuando se abre el modal
+  // useEffect para pre-llenar formulario con datos de Google al abrir el modal
   useEffect(() => {
     if (isOpen && user && userData) {
-      // Extraer nombre y apellido del nombre completo de Google
+      // Extraer nombre y apellido del nombre completo de Google (split por espacios)
       const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      // Pre-llenar formulario con datos de Google (nombre, email, foto)
       setFormData({
         documento: '',
         telefono: '',
@@ -46,6 +57,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     }
   }, [isOpen, user, userData]);
 
+  // useEffect para bloquear scroll del body cuando el modal está abierto
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -58,6 +70,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
+  // Actualizar campo del formulario: maneja cambios en inputs
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -65,7 +78,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     }));
   };
 
-  // Función para buscar DNI usando el servicio
+  // Buscar DNI en API externa: autocompleta nombre y apellido del usuario
   const searchDNI = async () => {
     const dni = formData.documento.trim();
     
@@ -78,10 +91,11 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     setSearchingDNI(true);
     
     try {
+      // Llamar a API externa para obtener datos del DNI
       const result = await getDNIData(dni);
 
       if (result.success) {
-        // Autocompletar nombre y apellidos
+        // Autocompletar nombre y apellidos en el formulario
         setFormData(prev => ({
           ...prev,
           nombre: result.data.nombre,
@@ -100,10 +114,11 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     }
   };
 
+  // Manejar envío del formulario: valida campos requeridos y completa registro de Google
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validaciones básicas
+    // Validaciones básicas de campos requeridos (todos son obligatorios)
     if (!formData.documento.trim()) {
       toast.error('El número de documento es requerido');
       return;
@@ -135,7 +150,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     }
 
     try {
-      // Llamar a la función para completar el registro de Google usando el ID del usuario autenticado
+      // Llamar a completeGoogleRegistration del contexto para actualizar datos temporales con datos reales
       const result = await completeGoogleRegistration(user.id, formData);
       
       if (result.success) {
@@ -151,6 +166,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     }
   };
 
+  // Backdrop click deshabilitado: el usuario DEBE completar el registro (modal obligatorio)
   const handleBackdropClick = (e) => {
     // Deshabilitado - el usuario debe completar el registro
     // if (e.target === e.currentTarget) {
@@ -158,7 +174,7 @@ const ModalRegistroGoogle = ({ isOpen, onClose }) => {
     // }
   };
 
-  // Función para renderizar el contenido del modal/drawer
+  // Renderizar contenido del modal: reutilizable para desktop y mobile
   const renderModalContent = () => (
     <>
       {/* Header del modal */}

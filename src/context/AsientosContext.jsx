@@ -1,7 +1,9 @@
+// contexto de asientos - maneja la disponibilidad de asientos de los viajes
+// consulta el backend para obtener asientos disponibles, ocupados y reservados
+
 import { createContext, useContext, useState, useCallback } from 'react';
 import { supabase } from '../supabase/supabase';
 
-// Crear el Context
 const AsientosContext = createContext();
 
 // Hook personalizado para usar el Context
@@ -13,15 +15,17 @@ export const useAsientos = () => {
   return context;
 };
 
-// Provider del Context
+// proveedor del contexto
 export const AsientosProvider = ({ children }) => {
-  const [asientos, setAsientos] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // estados para manejar asientos y carga
+  const [asientos, setAsientos] = useState([]);     // lista de asientos del viaje
+  const [loading, setLoading] = useState(false);    // estado de carga
+  const [error, setError] = useState(null);         // errores de consulta
 
-  // Función para obtener asientos por ID de viaje
+  // funcion para obtener asientos de un viaje especifico
+  // consulta el backend para traer todos los asientos con su estado actual
   const obtenerAsientosPorViaje = useCallback(async (idViaje) => {
-    // Validar parámetro de entrada
+    // validar que se proporciono el id del viaje
     if (!idViaje) {
       setError('El ID del viaje es obligatorio');
       return;
@@ -31,7 +35,8 @@ export const AsientosProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Llamar a la función SQL usando RPC (Remote Procedure Call)
+      // peticion al backend: ejecutar funcion sql para obtener asientos
+      // el backend consulta: SELECT * FROM asientos WHERE id_viaje = idViaje
       const { data, error: supabaseError } = await supabase.rpc('obtener_asientos_por_viaje', {
         p_id_viaje: idViaje
       });
@@ -41,7 +46,8 @@ export const AsientosProvider = ({ children }) => {
         throw supabaseError;
       }
 
-      // Transformar los datos para mejor uso en el frontend
+      // transformar datos del backend para mostrar en la interfaz
+      // cada asiento tiene: numero, piso, precio, estado (disponible/ocupado/reservado)
       const asientosFormateados = data?.map(asiento => ({
         idAsiento: asiento.id_asiento,
         numeroAsiento: asiento.numero_asiento,
@@ -51,6 +57,7 @@ export const AsientosProvider = ({ children }) => {
         estado: asiento.estado
       })) || [];
 
+      // guardar asientos en el estado
       setAsientos(asientosFormateados);
       
     } catch (err) {
@@ -62,28 +69,30 @@ export const AsientosProvider = ({ children }) => {
     }
   }, []);
 
-  // Función para limpiar los asientos
+  // funcion para limpiar la lista de asientos
+  // se usa cuando el usuario cambia de viaje
   const limpiarAsientos = useCallback(() => {
     setAsientos([]);
     setError(null);
   }, []);
 
-  // Función para limpiar solo el error
+  // funcion para limpiar mensajes de error
   const limpiarError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Valor del contexto que se proporcionará a los componentes hijos
+  // valores y funciones que se comparten con toda la aplicacion
+  // cualquier componente puede usar estas funciones para consultar asientos
   const value = {
-    // Estados
-    asientos,
-    loading,
-    error,
+    // estados
+    asientos,                       // lista de asientos del viaje
+    loading,                        // estado de carga
+    error,                          // mensajes de error
     
-    // Funciones
-    obtenerAsientosPorViaje,
-    limpiarAsientos,
-    limpiarError
+    // funciones
+    obtenerAsientosPorViaje,        // obtener asientos de un viaje
+    limpiarAsientos,                // limpiar lista de asientos
+    limpiarError                    // limpiar errores
   };
 
   return (

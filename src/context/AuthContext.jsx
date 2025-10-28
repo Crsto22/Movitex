@@ -1,10 +1,12 @@
+// Imports de React: createContext crea el contexto, useContext lo consume, useState maneja estados, useEffect ejecuta efectos secundarios
 import { createContext, useContext, useState, useEffect } from 'react';
+// Cliente de Supabase: conexión al backend (autenticación + PostgreSQL)
 import { supabase } from '../supabase/supabase';
 
-// Crear el contexto
+// Crear el contexto: almacén global para compartir estado de autenticación en toda la app
 const AuthContext = createContext();
 
-// Hook personalizado para usar el contexto
+// Hook personalizado: facilita el acceso al contexto desde cualquier componente
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -13,27 +15,31 @@ export const useAuth = () => {
   return context;
 };
 
-// Proveedor del contexto
+// Proveedor del contexto: componente que envuelve la app y distribuye el estado global
 export const AuthProvider = ({ children }) => {
+  // Estado user: datos de autenticación de Supabase (id, email, email_confirmed_at)
   const [user, setUser] = useState(null);
+  // Estado userData: datos completos del usuario desde tabla 'usuarios' (nombre, apellido, dni, etc.)
   const [userData, setUserData] = useState(null);
+  // Estado loading: indica si hay operaciones en progreso (login, registro, actualización)
   const [loading, setLoading] = useState(true);
 
-  // Funciones para manejar localStorage
+  // Guardar datos del usuario en localStorage: almacenamiento persistente en el navegador
   const saveUserDataToStorage = (userData) => {
     try {
-      console.log('💾 Guardando datos en localStorage:', userData);
+      console.log('Guardando datos en localStorage:', userData);
       localStorage.setItem('movitex_user_data', JSON.stringify(userData));
-      console.log('✅ Datos guardados correctamente en localStorage');
+      console.log('Datos guardados correctamente en localStorage');
     } catch (error) {
       console.error('Error al guardar datos en localStorage:', error);
     }
   };
 
+  // Obtener datos del usuario desde localStorage: recupera datos sin consultar la BD
   const getUserDataFromStorage = () => {
     try {
       const storedData = localStorage.getItem('movitex_user_data');
-      console.log('🔍 Datos en localStorage:', storedData);
+      console.log('Datos en localStorage:', storedData);
       return storedData ? JSON.parse(storedData) : null;
     } catch (error) {
       console.error('Error al obtener datos del localStorage:', error);
@@ -41,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Limpiar datos del usuario de localStorage: elimina datos al cerrar sesión
   const clearUserDataFromStorage = () => {
     try {
       localStorage.removeItem('movitex_user_data');
@@ -49,14 +56,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para registrar un nuevo usuario
+  // Registrar nuevo usuario: crea cuenta en Supabase Auth y guarda datos en tabla 'usuarios'
   const registerUser = async (userData, captchaToken) => {
     try {
       setLoading(true);
       
       const { documento, telefono, nombre, apellido, email, password, fecha_nacimiento, genero } = userData;
 
-      // Paso 1: Crear usuario en Supabase Auth con confirmación de email
+      // Paso 1: Crear usuario en Supabase Auth (sistema de autenticación) con confirmación de email
       const signUpOptions = {
         email: email,
         password: password,
@@ -65,7 +72,7 @@ export const AuthProvider = ({ children }) => {
         }
       };
 
-      // Agregar captchaToken si está disponible
+      // Agregar captchaToken de Cloudflare Turnstile si está disponible (protección contra bots)
       if (captchaToken) {
         signUpOptions.options.captchaToken = captchaToken;
       }
@@ -81,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Paso 2: Insertar datos del usuario en la tabla usuarios
+      // SQL: INSERT INTO usuarios (id_usuario, nombre, apellido, dni, correo, telefono, foto_url, fecha_creacion, fecha_nacimiento, genero) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       const { error: dbError } = await supabase
         .from('usuarios')
         .insert([
@@ -99,7 +107,7 @@ export const AuthProvider = ({ children }) => {
         ]);
 
       if (dbError) {
-        // Si hay error en la base de datos, intentamos limpiar el usuario de auth
+        // Rollback manual: si falla la inserción en BD, eliminar usuario de Auth para mantener consistencia
         console.error('Error al insertar en la base de datos:', dbError);
         
         // Intentar eliminar el usuario de auth si la inserción falló
@@ -125,7 +133,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error en el registro:', error);
       
-      // Mapear errores comunes a mensajes más amigables
+      // Manejo de errores: traduce errores técnicos de PostgreSQL a mensajes amigables
       let errorMessage = error.message;
       
       if (error.message.includes('duplicate key value violates unique constraint "usuarios_dni_key"')) {
@@ -151,7 +159,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para iniciar sesión
+  // Iniciar sesión: autentica usuario con email y password, valida email confirmado
   const loginUser = async (email, password, captchaToken) => {
     try {
       setLoading(true);
@@ -161,7 +169,7 @@ export const AuthProvider = ({ children }) => {
         password: password,
       };
 
-      // Agregar captchaToken si está disponible
+      // Agregar captchaToken de Cloudflare Turnstile si está disponible (protección contra fuerza bruta)
       if (captchaToken) {
         signInOptions.options = { captchaToken };
       }
@@ -172,7 +180,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(error.message);
       }
 
-      // Verificar si el email está confirmado
+      // Validación de email confirmado: previene acceso sin verificación de correo
       if (!data.user.email_confirmed_at) {
         // Cerrar sesión automáticamente si el email no está confirmado
         await supabase.auth.signOut();
@@ -184,7 +192,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data.user);
       
-      // Obtener datos completos del usuario desde la tabla usuarios
+      // Obtener datos completos del usuario desde la tabla usuarios y guardar en estado + localStorage
       const userDataResult = await getUserData(data.user.id);
       
       if (!userDataResult.success) {
@@ -227,7 +235,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(error.message);
       }
       
-      // Limpiar estados y localStorage
+      // Limpiar estados (user, userData) y localStorage para eliminar datos persistentes
       setUser(null);
       setUserData(null);
       clearUserDataFromStorage();
@@ -248,9 +256,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para obtener datos completos del usuario desde la base de datos
+  // Obtener datos completos del usuario desde la BD: consulta tabla 'usuarios'
   const fetchUserDataFromDB = async (userId) => {
     try {
+      // SQL: SELECT * FROM usuarios WHERE id_usuario = ? LIMIT 1;
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -275,12 +284,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para obtener y establecer datos completos del usuario
+  // Obtener y establecer datos del usuario: consulta BD, actualiza estado y localStorage
   const getUserData = async (userId) => {
     try {
       const result = await fetchUserDataFromDB(userId);
       
       if (result.success) {
+        // Actualizar estado local (React) y localStorage (persistencia)
         setUserData(result.userData);
         saveUserDataToStorage(result.userData);
         return result;
@@ -297,12 +307,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para actualizar datos del usuario
+  // Actualizar datos del usuario: modifica información en BD y actualiza estado local
   const updateUserData = async (userId, updatedData) => {
     try {
       setLoading(true);
 
-      // Actualizar en la base de datos
+      // SQL: UPDATE usuarios SET nombre = ?, apellido = ?, telefono = ?, fecha_nacimiento = ?, genero = ? WHERE id_usuario = ? RETURNING *;
       const { data, error } = await supabase
         .from('usuarios')
         .update({
@@ -320,7 +330,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(error.message);
       }
 
-      // Actualizar estado local y localStorage
+      // Actualizar estado local (React) y localStorage después de modificar en BD
       setUserData(data);
       saveUserDataToStorage(data);
 
@@ -348,7 +358,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para reenviar correo de confirmación
+  // Reenviar correo de confirmación: envía nuevamente el email de verificación
   const resendConfirmationEmail = async (email) => {
     try {
       setLoading(true);
@@ -381,7 +391,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para enviar correo de recuperación de contraseña
+  // Enviar correo de recuperación: solicita restablecimiento de contraseña vía email
   const resetPasswordForEmail = async (email, captchaToken) => {
     try {
       setLoading(true);
@@ -426,18 +436,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para actualizar contraseña
+  // Actualizar contraseña: cambia la contraseña del usuario autenticado
   const updatePassword = async (newPassword) => {
     try {
       setLoading(true);
       
-      // Verificar que hay una sesión activa
+      // Verificar que hay una sesión activa antes de cambiar contraseña
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         throw new Error('No hay una sesión activa para cambiar la contraseña');
       }
       
+      // Actualizar la contraseña del usuario
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -446,10 +457,10 @@ export const AuthProvider = ({ children }) => {
         throw error;
       }
 
-      // Después de actualizar la contraseña, cerrar la sesión para que el usuario inicie sesión con la nueva contraseña
+      // Cerrar sesión automáticamente después de cambiar contraseña (seguridad)
       await supabase.auth.signOut();
       
-      // Limpiar estados locales
+      // Limpiar estados locales para forzar nuevo inicio de sesión
       setUser(null);
       setUserData(null);
       clearUserDataFromStorage();
@@ -480,7 +491,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para obtener las reservas completadas del usuario
+  // Obtener reservas completadas: llama a función SQL almacenada en PostgreSQL
   const obtenerReservasCompletadas = async (userId = null) => {
     try {
       // Si no se proporciona userId, usar el del usuario actual
@@ -494,20 +505,21 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      console.log('📋 Obteniendo reservas completadas para usuario:', targetUserId);
+      console.log('Obteniendo reservas completadas para usuario:', targetUserId);
 
-      // Llamar a la función SQL para obtener las reservas
+      // Llamar a función SQL almacenada (stored procedure) con .rpc()
+      // SQL: SELECT * FROM obtener_reservas_completadas_usuario(?);
       const { data, error } = await supabase.rpc('obtener_reservas_completadas_usuario', {
         p_id_usuario: targetUserId
       });
 
       if (error) {
-        console.error('❌ Error al obtener reservas:', error);
+        console.error('Error al obtener reservas:', error);
         throw new Error(`Error al obtener reservas: ${error.message}`);
       }
 
       if (!data) {
-        console.log('⚠️ No se encontraron reservas para el usuario');
+        console.log('No se encontraron reservas para el usuario');
         return {
           success: true,
           message: 'No se encontraron reservas',
@@ -515,8 +527,8 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      console.log('✅ Reservas obtenidas:', data.length);
-      console.log('📊 Datos de reservas:', data);
+      console.log('Reservas obtenidas:', data.length);
+      console.log('Datos de reservas:', data);
 
       // Formatear los datos para mejor uso en la UI
       const reservasFormateadas = data.map(reserva => ({
@@ -559,7 +571,7 @@ export const AuthProvider = ({ children }) => {
       };
 
     } catch (error) {
-      console.error('❌ Error al obtener reservas completadas:', error);
+      console.error('Error al obtener reservas completadas:', error);
       return {
         success: false,
         message: error.message || 'Error al obtener las reservas',
@@ -568,7 +580,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para actualizar la foto de perfil de Google en cada login
+  // Actualizar foto de perfil de Google: sincroniza foto de Google en cada login
   const updateGoogleProfilePhoto = async (user) => {
     try {
       // Solo proceder si es un usuario de Google y tiene foto
@@ -576,17 +588,17 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: 'No es usuario de Google o no tiene foto' };
       }
 
-      console.log('🖼️ Actualizando foto de perfil de Google...');
+      console.log('Actualizando foto de perfil de Google...');
       
       // Obtener la URL más reciente de la foto de perfil
       const newPhotoUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
       
       if (!newPhotoUrl) {
-        console.log('❌ No se encontró URL de foto en los metadatos del usuario');
+        console.log('No se encontró URL de foto en los metadatos del usuario');
         return { success: false, message: 'No hay URL de foto disponible' };
       }
 
-      // Actualizar la foto en la base de datos
+      // SQL: UPDATE usuarios SET foto_url = ? WHERE id_usuario = ? RETURNING *;
       const { data, error } = await supabase
         .from('usuarios')
         .update({
@@ -597,13 +609,13 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error) {
-        console.error('❌ Error actualizando foto en DB:', error);
+        console.error('Error actualizando foto en DB:', error);
         return { success: false, message: error.message };
       }
 
-      console.log('✅ Foto de perfil actualizada correctamente');
+      console.log('Foto de perfil actualizada correctamente');
       
-      // Actualizar el estado local inmediatamente
+      // Actualizar estado local y localStorage inmediatamente con la nueva foto
       if (data) {
         setUserData(data);
         saveUserDataToStorage(data);
@@ -616,15 +628,15 @@ export const AuthProvider = ({ children }) => {
       };
 
     } catch (error) {
-      console.error('❌ Error al actualizar foto de perfil:', error);
+      console.error('Error al actualizar foto de perfil:', error);
       return { success: false, message: 'Error al actualizar foto' };
     }
   };
 
-  // Función para crear usuario en DB después de OAuth (Google)
+  // Crear usuario desde OAuth (Google): crea o actualiza usuario después de login con Google
   const createUserFromOAuth = async (user) => {
     try {
-      // Verificar si el usuario ya existe en la base de datos
+      // SQL: SELECT * FROM usuarios WHERE id_usuario = ? LIMIT 1;
       const { data: existingUser, error: checkError } = await supabase
         .from('usuarios')
         .select('*')
@@ -639,7 +651,7 @@ export const AuthProvider = ({ children }) => {
       if (existingUser) {
         // Usuario existe - actualizar foto de perfil si es de Google
         if (user.app_metadata?.provider === 'google') {
-          console.log('👤 Usuario Google existente, actualizando foto...');
+          console.log('Usuario Google existente, actualizando foto...');
           await updateGoogleProfilePhoto(user);
         }
 
@@ -693,7 +705,7 @@ export const AuthProvider = ({ children }) => {
         throw insertError;
       }
 
-      console.log('🆕 Nuevo usuario Google creado');
+      console.log('Nuevo usuario Google creado');
 
       return {
         success: true,
@@ -739,7 +751,7 @@ export const AuthProvider = ({ children }) => {
       setUserData(data);
       saveUserDataToStorage(data);
 
-      console.log('✅ Registro de Google completado');
+      console.log('Registro de Google completado');
 
       return {
         success: true,
@@ -771,14 +783,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Obtener sesión inicial
     const getInitialSession = async () => {
-      console.log('🚀 Iniciando getInitialSession...');
+      console.log('Iniciando getInitialSession...');
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('📱 Sesión obtenida:', session?.user?.id || 'Sin sesión');
+      console.log('Sesión obtenida:', session?.user?.id || 'Sin sesión');
       
       if (session?.user) {
         // Verificar si el email está confirmado
         if (!session.user.email_confirmed_at) {
-          console.log('❌ Email no confirmado, cerrando sesión');
+          console.log('Email no confirmado, cerrando sesión');
           await supabase.auth.signOut();
           setUser(null);
           setUserData(null);
@@ -794,25 +806,25 @@ export const AuthProvider = ({ children }) => {
         
         // Intentar cargar datos del usuario desde localStorage
         const storedUserData = getUserDataFromStorage();
-        console.log('💾 Datos del localStorage:', storedUserData);
-        console.log('🔑 ID de usuario actual:', session.user.id);
-        console.log('🔐 Provider:', session.user.app_metadata?.provider);
+        console.log('Datos del localStorage:', storedUserData);
+        console.log('ID de usuario actual:', session.user.id);
+        console.log('Provider:', session.user.app_metadata?.provider);
         
         if (storedUserData && storedUserData.id_usuario === session.user.id) {
-          console.log('✅ Datos coinciden, usando localStorage');
+          console.log('Datos coinciden, usando localStorage');
           setUserData(storedUserData);
           
           // Actualizar foto de perfil si es usuario de Google
           if (isOAuthUser) {
-            console.log('🖼️ Actualizando foto de Google en sesión inicial...');
+            console.log('Actualizando foto de Google en sesión inicial...');
             updateGoogleProfilePhoto(session.user);
           }
         } else {
-          console.log('❌ Datos no coinciden o no existen, obteniendo de DB');
+          console.log('Datos no coinciden o no existen, obteniendo de DB');
           
           if (isOAuthUser) {
             // Usuario de Google OAuth, crear/obtener datos desde OAuth
-            console.log('🔑 Usuario OAuth, creando/obteniendo datos...');
+            console.log('Usuario OAuth, creando/obteniendo datos...');
             const oauthResult = await createUserFromOAuth(session.user);
             if (oauthResult.success) {
               setUserData(oauthResult.userData);
@@ -829,7 +841,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } else {
-        console.log('❌ Sin sesión, limpiando datos');
+        console.log('Sin sesión, limpiando datos');
         setUser(null);
         setUserData(null);
         clearUserDataFromStorage();
@@ -843,12 +855,12 @@ export const AuthProvider = ({ children }) => {
     // Escuchar cambios en la autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state change:', event, session?.user?.id || 'Sin usuario');
+        console.log('Auth state change:', event, session?.user?.id || 'Sin usuario');
         
         if (session?.user) {
           // Verificar si el email está confirmado
           if (!session.user.email_confirmed_at) {
-            console.log('❌ Email no confirmado en auth change, cerrando sesión');
+            console.log('Email no confirmado en auth change, cerrando sesión');
             await supabase.auth.signOut();
             setUser(null);
             setUserData(null);
@@ -865,20 +877,20 @@ export const AuthProvider = ({ children }) => {
           // Para evitar llamadas innecesarias a la DB, solo verificamos localStorage
           const storedUserData = getUserDataFromStorage();
           if (storedUserData && storedUserData.id_usuario === session.user.id) {
-            console.log('✅ Usando datos de localStorage en auth change');
+            console.log('Usando datos de localStorage en auth change');
             setUserData(storedUserData);
             
             // Actualizar foto de perfil si es usuario de Google
             if (isOAuthUser) {
-              console.log('🖼️ Actualizando foto de Google en auth change...');
+              console.log('Actualizando foto de Google en auth change...');
               updateGoogleProfilePhoto(session.user);
             }
           } else {
-            console.log('🔄 Obteniendo datos de DB en auth change');
+            console.log('Obteniendo datos de DB en auth change');
             
             if (isOAuthUser) {
               // Usuario de Google OAuth
-              console.log('🔑 Usuario OAuth en auth change, creando/obteniendo datos...');
+              console.log('Usuario OAuth en auth change, creando/obteniendo datos...');
               const oauthResult = await createUserFromOAuth(session.user);
               if (oauthResult.success) {
                 setUserData(oauthResult.userData);

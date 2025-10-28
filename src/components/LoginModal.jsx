@@ -1,12 +1,20 @@
+// Imports de React: useState para estados, useEffect para efectos, useRef para referencias DOM
 import { useState, useEffect, useRef } from 'react';
+// CSSTransition para animaciones de entrada/salida del modal
 import { CSSTransition } from 'react-transition-group';
+// Iconos de lucide-react para UI
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+// Turnstile de Cloudflare para protección CAPTCHA contra bots
 import { Turnstile } from '@marsidev/react-turnstile';
+// Hook personalizado para acceder a funciones de autenticación
 import { useAuth } from '../context/AuthContext';
+// Toast para notificaciones al usuario
 import toast from 'react-hot-toast';
 import Movitex from "../assets/Movitex.svg";
 
+// Componente LoginModal: modal/drawer de inicio de sesión con soporte para recuperación de contraseña
 const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
+  // Estados del formulario de login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -14,17 +22,21 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
   const [showResendButton, setShowResendButton] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  // Estados para tokens de Cloudflare Turnstile (CAPTCHA)
   const [captchaToken, setCaptchaToken] = useState();
   const [resetCaptchaToken, setResetCaptchaToken] = useState();
+  // Keys para forzar recreación de Turnstile después de errores
   const [loginTurnstileKey, setLoginTurnstileKey] = useState(0);
   const [resetTurnstileKey, setResetTurnstileKey] = useState(0);
+  // Desestructurar funciones del contexto de autenticación
   const { loginUser, signInWithGoogle, resendConfirmationEmail, resetPasswordForEmail } = useAuth();
 
-  // Referencias para evitar findDOMNode
+  // Referencias DOM para CSSTransition (evita warnings de findDOMNode)
   const backdropRef = useRef(null);
   const desktopModalRef = useRef(null);
   const mobileModalRef = useRef(null);
 
+  // useEffect para manejar apertura/cierre del modal: bloquea scroll y resetea estados
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -48,6 +60,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     };
   }, [isOpen]);
 
+  // Manejar envío del formulario de login: valida campos, CAPTCHA y llama a loginUser
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -65,6 +78,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     setShowResendButton(false);
     
     try {
+      // Llamar a loginUser del contexto con email, password y token CAPTCHA
       const result = await loginUser(email, password, captchaToken);
       
       if (result.success) {
@@ -95,6 +109,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
+  // Reenviar correo de confirmación: para usuarios que no confirmaron su email
   const handleResendConfirmation = async () => {
     if (!email) {
       toast.error('Por favor ingresa tu correo electrónico');
@@ -119,6 +134,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
+  // Manejar recuperación de contraseña: envía email con enlace de restablecimiento
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     
@@ -158,6 +174,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
+  // Mostrar formulario de recuperación: cambia vista y pre-llena email
   const handleShowForgotPassword = () => {
     setShowForgotPassword(true);
     setResetEmail(email); // Pre-llenar con el email del formulario principal
@@ -169,6 +186,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     setResetTurnstileKey(prev => prev + 1);
   };
 
+  // Volver al formulario de login desde recuperación de contraseña
   const handleBackToLogin = () => {
     setShowForgotPassword(false);
     setResetEmail('');
@@ -180,12 +198,14 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     setResetTurnstileKey(prev => prev + 1);
   };
 
+  // Cerrar modal al hacer clic en el fondo (backdrop)
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
+  // Iniciar sesión con Google OAuth: redirige a Google para autenticación
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
@@ -204,7 +224,7 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     }
   };
 
-  // Función para renderizar el contenido del modal/drawer
+  // Renderizar contenido del modal: reutilizable para desktop y mobile
   const renderModalContent = () => (
     <>
       {/* Header del modal */}

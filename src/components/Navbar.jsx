@@ -1,22 +1,32 @@
+// Imports de React: useState maneja estados locales, useEffect ejecuta efectos secundarios
 import { useState, useEffect } from 'react';
+// Link de react-router-dom: navegación sin recargar la página (SPA)
 import { Link } from 'react-router-dom';
+// Hook personalizado para acceder al contexto de autenticación
 import { useAuth } from '../context/AuthContext';
+// Toast para mostrar notificaciones al usuario
 import toast from 'react-hot-toast';
+// Imports de assets (imágenes y logos)
 import Logo from '../assets/Logo.png';
 import Movitex from "../assets/Movitex.svg";
 import User from '../assets/User.png';
+// Imports de componentes modales
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 import ModalRegistroGoogle from './ModalRegistroGoogle';
+// Componente Navbar: barra de navegación principal con autenticación y menú responsive
 const Navbar = () => {
+  // Estados para controlar la UI: menú móvil, scroll, modales y dropdown de usuario
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  // Desestructurar datos del contexto de autenticación
   const { user, userData, logoutUser, loading } = useAuth();
 
+  // Alternar menú móvil: abre/cierra y bloquea/desbloquea scroll del body
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
     // Prevenir scroll cuando el menú móvil está abierto
@@ -27,13 +37,14 @@ const Navbar = () => {
     }
   };
 
-  // Limpiar overflow cuando el componente se desmonte
+  // useEffect de limpieza: restaura scroll al desmontar el componente
   useEffect(() => {
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, []);
 
+  // Abrir modal de login o toggle dropdown: depende si el usuario está autenticado
   const openLoginModal = () => {
     if (!user) {
       setIsLoginModalOpen(true);
@@ -60,7 +71,7 @@ const Navbar = () => {
     setIsLoginModalOpen(true);
   };
 
-  // Hook para detectar si se debe mostrar el modal de Google
+  // useEffect para detectar usuarios de Google con datos incompletos
   useEffect(() => {
     if (user && userData) {
       // Verificar si el usuario tiene datos temporales de Google (dni y telefono con prefijo GOOGLE_)
@@ -75,6 +86,7 @@ const Navbar = () => {
     setIsGoogleModalOpen(false);
   };
 
+  // Cerrar sesión: llama a logoutUser del contexto y muestra notificación
   const handleLogout = async () => {
     try {
       const result = await logoutUser();
@@ -89,6 +101,7 @@ const Navbar = () => {
     setUserDropdownOpen(false);
   };
 
+  // useEffect para detectar scroll: cambia estilo del navbar al hacer scroll
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -102,7 +115,7 @@ const Navbar = () => {
     };
   }, []);
 
-  // Cerrar dropdown cuando se hace clic fuera
+  // useEffect para cerrar dropdown al hacer clic fuera del elemento
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userDropdownOpen && !event.target.closest('.user-dropdown-container')) {
