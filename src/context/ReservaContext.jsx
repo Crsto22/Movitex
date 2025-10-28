@@ -61,7 +61,7 @@ export const ReservaProvider = ({ children }) => {
     // Si hay datos nuevos que requieren reinicio, usar la función de reinicio
     if (forzarReinicio && nuevosAsientos && nuevoIdViaje !== null) {
       console.log(' Forzando reinicio con nuevos datos de asientos')
-      console.log('🔄 Forzando reinicio con nuevos datos de asientos')
+      console.log(' Forzando reinicio con nuevos datos de asientos')
       reiniciarReservaConNuevosDatos(nuevosAsientos, nuevoIdViaje, nuevoDatosViaje, nuevoTotal, nuevoCronometro)
       return true
     }
@@ -152,10 +152,10 @@ export const ReservaProvider = ({ children }) => {
       
       // Cargar datos del viaje si existen
       if (data.datosViaje) {
-        console.log('🎯 Datos del viaje cargados:', data.datosViaje)
+        console.log(' Datos del viaje cargados:', data.datosViaje)
         setDatosViaje(data.datosViaje)
       } else {
-        console.log('⚠️ No se encontraron datos del viaje en la reserva')
+        console.log(' No se encontraron datos del viaje en la reserva')
       }
 
       // Generar formularios dinámicos según asientos seleccionados
@@ -179,7 +179,7 @@ export const ReservaProvider = ({ children }) => {
       if (userData) {
         try {
           userInfo = JSON.parse(userData)
-          console.log('👤 Datos del usuario encontrados:', userInfo)
+          console.log(' Datos del usuario encontrados:', userInfo)
         } catch (error) {
           console.error('Error al parsear datos del usuario:', error)
         }
@@ -365,7 +365,7 @@ export const ReservaProvider = ({ children }) => {
     
     sessionStorage.setItem('movitex_reserva_completa', JSON.stringify(nuevaReservaCompleta))
     
-    console.log('✅ Reserva reiniciada con nuevos datos:', {
+    console.log('Reserva reiniciada con nuevos datos:', {
       asientos: nuevosAsientos.length,
       total: nuevoTotal,
       viaje: nuevoIdViaje
@@ -532,7 +532,7 @@ export const ReservaProvider = ({ children }) => {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'movitex_reserva_completa' && e.newValue && inicializado) {
-        console.log('🔄 Detectado cambio en sessionStorage, reinicializando contexto...')
+        console.log(' Detectado cambio en sessionStorage, reinicializando contexto...')
         setInicializado(false)
       }
     }
@@ -678,19 +678,19 @@ export const ReservaProvider = ({ children }) => {
           id_asiento: parseInt(pasajero.id_asiento) || 0
         }
         
-        console.log(`👤 Pasajero ${index + 1}:`, pasajeroSQL)
+        console.log(` Pasajero ${index + 1}:`, pasajeroSQL)
         return pasajeroSQL
       })
 
-      console.log('📋 Estructura de pasajeros para SQL:', JSON.stringify(pasajerosParaSQL, null, 2))
+      console.log(' Estructura de pasajeros para SQL:', JSON.stringify(pasajerosParaSQL, null, 2))
 
       let data, error
 
       // caso 1: usuarios logueados
       // peticion al backend: ejecutar funcion sql crear_reserva_usuario_logueado
       if (esUsuarioLogueado) {
-        console.log('🔐 Creando reserva para usuario logueado:', userId)
-        console.log('🚀 Datos de reserva logueado:', {
+        console.log(' Creando reserva para usuario logueado:', userId)
+        console.log(' Datos de reserva logueado:', {
           userId,
           idViaje,
           totalPrecio,
@@ -711,7 +711,7 @@ export const ReservaProvider = ({ children }) => {
       // caso 2: usuarios anonimos
       // peticion al backend: ejecutar funcion sql crear_reserva_anonima
       else {
-        console.log('👤 Creando reserva para usuario anonimo')
+        console.log(' Creando reserva para usuario anonimo')
         
         // para anonimos necesitamos correo y telefono obligatorios
         if (!correo || correo.trim() === '') {
@@ -722,7 +722,7 @@ export const ReservaProvider = ({ children }) => {
           throw new Error('El teléfono es obligatorio para continuar con la reserva')
         }
 
-        console.log('🚀 Datos de reserva anonima:', {
+        console.log(' Datos de reserva anonima:', {
           idViaje,
           totalPrecio,
           pasajeros: pasajerosParaSQL,
@@ -744,7 +744,7 @@ export const ReservaProvider = ({ children }) => {
       }
 
       if (error) {
-        console.error('❌ Error al crear reserva:', error)
+        console.error(' Error al crear reserva:', error)
         throw new Error(`Error al procesar la reserva: ${error.message}`)
       }
 
@@ -753,7 +753,7 @@ export const ReservaProvider = ({ children }) => {
       }
 
       const resultado = data[0]
-      console.log('✅ Reserva creada exitosamente:', resultado)
+      console.log(' Reserva creada exitosamente:', resultado)
 
       // guardar datos de la reserva exitosa
       setReservaExitosa({
@@ -770,16 +770,16 @@ export const ReservaProvider = ({ children }) => {
         totalPrecio: totalPrecio
       })
 
-      console.log('🎯 Navegando a pagina de confirmacion con ID:', resultado.id_reserva)
+      console.log(' Navegando a pagina de confirmacion con ID:', resultado.id_reserva)
       
       // limpiar completamente el sessionstorage tras reserva exitosa
-      console.log('🧹 Limpiando sessionStorage tras reserva exitosa...')
+      console.log(' Limpiando sessionStorage tras reserva exitosa...')
       sessionStorage.removeItem('movitex_reserva_completa')
       sessionStorage.removeItem('movitex_reserva_data')
       sessionStorage.removeItem('movitex_timer_start')
       sessionStorage.removeItem('movitex_timer_limit')
       sessionStorage.removeItem('movitex_formulario_data')
-      console.log('✅ SessionStorage limpiado completamente')
+      console.log(' SessionStorage limpiado completamente')
       
       // redirigir a pagina de confirmacion usando el id de la reserva en la url
       navigate(`/pasajes-bus/confirmacion/${resultado.id_reserva}`)
@@ -787,7 +787,7 @@ export const ReservaProvider = ({ children }) => {
       return resultado
 
     } catch (error) {
-      console.error('❌ Error en el proceso de reserva:', error)
+      console.error(' Error en el proceso de reserva:', error)
       setErrorPago(error.message)
       throw error
     } finally {

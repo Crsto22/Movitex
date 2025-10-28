@@ -129,8 +129,8 @@ const SearchBox = () => {
   };
 
   const handleSearch = () => {
-    console.log('🚀 Función handleSearch ejecutada');
-    console.log('📊 Datos de búsqueda:', searchData);
+    console.log(' Función handleSearch ejecutada');
+    console.log(' Datos de búsqueda:', searchData);
     
     // Validar que los campos obligatorios estén llenos
     if (!searchData.origen.trim() || !searchData.destino.trim()) {
@@ -160,14 +160,14 @@ const SearchBox = () => {
       return;
     }
 
-    console.log('✅ Validaciones pasadas');
+    console.log(' Validaciones pasadas');
 
     // Construir la URL de navegación
     const origen = searchData.origen.toLowerCase().replace(/\s+/g, '-');
     const destino = searchData.destino.toLowerCase().replace(/\s+/g, '-');
     
-    console.log('🏙️ Origen procesado:', origen);
-    console.log('🎯 Destino procesado:', destino);
+    console.log(' Origen procesado:', origen);
+    console.log(' Destino procesado:', destino);
     
     // Formatear fecha para URL (dd-mm-yyyy)
     const formatDateForURL = (dateString) => {
@@ -176,7 +176,7 @@ const SearchBox = () => {
     };
 
     const fechaSalida = formatDateForURL(searchData.salida);
-    console.log('📅 Fecha salida formateada:', fechaSalida);
+    console.log(' Fecha salida formateada:', fechaSalida);
     
     // Construir parámetros de query
     const queryParams = new URLSearchParams();
@@ -192,15 +192,15 @@ const SearchBox = () => {
     // Construir URL completa
     const url = `/pasajes-bus/${origen}/${destino}?${queryParams.toString()}`;
     
-    console.log('🌐 URL construida:', url);
-    console.log('🚀 Iniciando navegación...');
+    console.log('URL construida:', url);
+    console.log(' Iniciando navegación...');
     
     // Navegar a la página de resultados
     try {
       navigate(url);
-      console.log('✅ Navigate ejecutado');
+      console.log(' Navigate ejecutado');
     } catch (error) {
-      console.error('❌ Error en navigate:', error);
+      console.error(' Error en navigate:', error);
       toast.error('Error al realizar la búsqueda. Inténtalo nuevamente.');
     }
   };

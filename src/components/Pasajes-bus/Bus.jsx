@@ -12,7 +12,7 @@ import { useViajes } from '../../context/ViajesContext'
 import { useCiudades } from '../../context/CiudadesContext'
 
 function Bus({ idViaje = null }) {
-  console.log('🚌 Componente Bus iniciado con idViaje:', idViaje)
+  console.log(' Componente Bus iniciado con idViaje:', idViaje)
   
   const navigate = useNavigate()
   const [seatData, setSeatData] = useState([])
@@ -35,7 +35,7 @@ function Bus({ idViaje = null }) {
   
   // Log para monitorear cambios en el contexto
   useEffect(() => {
-    console.log('📊 Estados del contexto:')
+    console.log('Estados del contexto:')
     console.log('  - asientos:', asientos)
     console.log('  - loading:', loading)
     console.log('  - error:', error)
@@ -344,7 +344,7 @@ function Bus({ idViaje = null }) {
           )}
 
           {/* Generación dinámica de asientos desde backend */}
-          {console.log('🎯 Renderizando asientos - seatData.length:', seatData.length)}
+          {console.log(' Renderizando asientos - seatData.length:', seatData.length)}
           {seatData.map((seat) => (
             <div key={seat.id}>
               {/* Número del asiento */}
