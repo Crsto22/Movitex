@@ -1,6 +1,6 @@
 // Servicio para consultas de DNI usando la API de APIS Perú
-const DNI_API_BASE_URL = 'https://dniruc.apisperu.com/api/v1';
-const DNI_API_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImFydHVybzIwMDUxMkBnbWFpbC5jb20ifQ.weOFvvtMjsV79-RU4aecV7RzyAfU9eC5SzkPh4XwRnI';
+const DNI_API_BASE_URL = import.meta.env.VITE_DNI_API_BASE_URL;
+const DNI_API_TOKEN = import.meta.env.VITE_DNI_API_TOKEN;
 
 /**
  * Valida si un DNI tiene el formato correcto

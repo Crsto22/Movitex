@@ -62,7 +62,7 @@ const ConfirmEmail = () => {
           
           if (sessionData?.session?.user?.email_confirmed_at) {
             setConfirmed(true);
-            toast.success('Tu correo ha sido verificado correctamente 🎉');
+            toast.success('Tu correo ha sido verificado correctamente ');
             
             setTimeout(() => {
               navigate('/inicio');
@@ -120,7 +120,7 @@ const ConfirmEmail = () => {
               className="text-xl font-bold text-green-800 mb-2"
               style={{ fontFamily: 'MusticaPro, sans-serif' }}
             >
-              Tu correo ha sido verificado correctamente 🎉
+              Tu correo ha sido verificado correctamente 
             </h2>
             <p className="text-gray-600 mb-4">
               Tu cuenta ha sido verificada. Ya puedes iniciar sesión.
