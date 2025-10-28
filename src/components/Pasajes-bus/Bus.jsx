@@ -43,11 +43,11 @@ function Bus({ idViaje = null }) {
 
   // Función para procesar los asientos del backend y determinar pisos disponibles
   const processSeatsData = () => {
-    console.log('🔍 processSeatsData - asientos recibidos:', asientos)
-    console.log('🔍 processSeatsData - activePiso:', activePiso)
+    console.log(' processSeatsData - asientos recibidos:', asientos)
+    console.log(' processSeatsData - activePiso:', activePiso)
     
     if (!asientos || asientos.length === 0) {
-      console.log('⚠️ No hay asientos disponibles')
+      console.log(' No hay asientos disponibles')
       setSeatData([])
       setAllSeatsData([])
       setPisosDisponibles([1])
@@ -56,12 +56,12 @@ function Bus({ idViaje = null }) {
     
     // Determinar qué pisos están disponibles
     const pisosUnicos = [...new Set(asientos.map(asiento => asiento.piso))].sort()
-    console.log('🔍 Pisos únicos encontrados:', pisosUnicos)
+    console.log(' Pisos únicos encontrados:', pisosUnicos)
     setPisosDisponibles(pisosUnicos)
     
     // Si no hay piso 2 y estamos en piso2, cambiar a piso1
     if (!pisosUnicos.includes(2) && activePiso === 'piso2') {
-      console.log('🔄 Cambiando a piso1 porque no existe piso2')
+      console.log('Cambiando a piso1 porque no existe piso2')
       setActivePiso('piso1')
     }
     
@@ -83,13 +83,13 @@ function Bus({ idViaje = null }) {
       return newSeat
     })
     
-    console.log('🔍 Todos los asientos generados:', updatedSeats)
+    console.log(' Todos los asientos generados:', updatedSeats)
     setAllSeatsData(updatedSeats)
     
     // Filtrar asientos solo del piso activo para visualización
     const pisoNumero = activePiso === 'piso1' ? 1 : 2
     const asientosPisoActivo = updatedSeats.filter(asiento => asiento.pisoNumero === pisoNumero)
-    console.log('🔍 Asientos filtrados para piso activo', pisoNumero, ':', asientosPisoActivo)
+    console.log(' Asientos filtrados para piso activo', pisoNumero, ':', asientosPisoActivo)
     setSeatData(asientosPisoActivo)
   }
 
@@ -155,18 +155,18 @@ function Bus({ idViaje = null }) {
 
   // Cargar asientos cuando se proporciona un idViaje
   useEffect(() => {
-    console.log('🚀 useEffect idViaje - idViaje:', idViaje)
+    console.log(' useEffect idViaje - idViaje:', idViaje)
     if (idViaje) {
-      console.log('📞 Llamando a obtenerAsientosPorViaje con:', idViaje)
+      console.log(' Llamando a obtenerAsientosPorViaje con:', idViaje)
       obtenerAsientosPorViaje(idViaje)
     } else {
-      console.log('⚠️ No se proporcionó idViaje')
+      console.log(' No se proporcionó idViaje')
     }
   }, [idViaje, obtenerAsientosPorViaje])
   
   // Procesar datos cuando cambien los asientos del backend (solo al inicio o actualización)
   useEffect(() => {
-    console.log('🔄 useEffect processSeatsData - ejecutando processSeatsData')
+    console.log(' useEffect processSeatsData - ejecutando processSeatsData')
     processSeatsData()
   }, [asientos])
 
@@ -448,9 +448,9 @@ function Bus({ idViaje = null }) {
                     ciudad.nombre.toLowerCase() === datosRuta?.ciudadDestino?.toLowerCase()
                   )
                   
-                  console.log('🚌 Datos del viaje seleccionado:', viajeSeleccionado)
-                  console.log('🗺️ Datos de ruta:', datosRuta)
-                  console.log('🏙️ Ciudades encontradas:', { ciudadOrigen, ciudadDestino })
+                  console.log(' Datos del viaje seleccionado:', viajeSeleccionado)
+                  console.log(' Datos de ruta:', datosRuta)
+                  console.log(' Ciudades encontradas:', { ciudadOrigen, ciudadDestino })
                   
                   // Preparar asientos seleccionados
                   const asientosSeleccionados = selectedSeats.map(seat => ({
@@ -483,7 +483,7 @@ function Bus({ idViaje = null }) {
                     tipoAsiento: selectedSeats[0]?.anguloReclinacion || '140°'
                   }
                   
-                  // ✅ VERIFICAR SI HAY CAMBIOS EN LA SELECCIÓN DE ASIENTOS
+                  // VERIFICAR SI HAY CAMBIOS EN LA SELECCIÓN DE ASIENTOS
                   const existingData = sessionStorage.getItem('movitex_reserva_completa')
                   let shouldReinitialize = false
                   
@@ -500,7 +500,7 @@ function Bus({ idViaje = null }) {
                       const viajesDifferent = parsedData.idViaje !== idViaje
                       
                       if (seatsDifferent || viajesDifferent) {
-                        console.log('🔄 Detectados cambios en la selección:', {
+                        console.log(' Detectados cambios en la selección:', {
                           asientosDiferentes: seatsDifferent,
                           viajesDiferentes: viajesDifferent,
                           asientosAnteriores: existingSeatIds,
@@ -519,8 +519,8 @@ function Bus({ idViaje = null }) {
                   const tiempoLimite = tiempoInicio + (10 * 60 * 1000) // 10 minutos
                   
                   if (shouldReinitialize) {
-                    // ✅ HAY CAMBIOS: Limpiar y reiniciar con nuevos datos
-                    console.log('🔄 Reiniciando sessionStorage con nuevos datos de asientos')
+                    //  HAY CAMBIOS: Limpiar y reiniciar con nuevos datos
+                    console.log(' Reiniciando sessionStorage con nuevos datos de asientos')
                     
                     // Limpiar datos anteriores
                     sessionStorage.removeItem('movitex_reserva_completa')
@@ -530,7 +530,7 @@ function Bus({ idViaje = null }) {
                     sessionStorage.removeItem('movitex_formulario_data')
                   }
                   
-                  // ✅ CREAR NUEVA ESTRUCTURA CONSOLIDADA
+                  //  CREAR NUEVA ESTRUCTURA CONSOLIDADA
                   const nuevaReservaCompleta = {
                     datosViaje: datosViaje,
                     asientosSeleccionados: asientosSeleccionados,
@@ -553,7 +553,7 @@ function Bus({ idViaje = null }) {
                   // Guardar nueva estructura
                   sessionStorage.setItem('movitex_reserva_completa', JSON.stringify(nuevaReservaCompleta))
                   
-                  console.log('✅ Datos de reserva actualizados:', {
+                  console.log(' Datos de reserva actualizados:', {
                     reiniciado: shouldReinitialize,
                     asientos: asientosSeleccionados.length,
                     total: totalPrice,
