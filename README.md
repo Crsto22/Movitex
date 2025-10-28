@@ -50,7 +50,6 @@
 - **React Hot Toast** - Notificaciones elegantes
 - **React Transition Group** - Transiciones de componentes
 - **Lottie React** - Animaciones vectoriales
-- **React Canvas Confetti** - Efectos de celebración
 
 ---
 
@@ -220,36 +219,6 @@ La aplicación está completamente optimizada para:
 - Tablets (768px+)
 - Desktop (1024px+)
 - Pantallas grandes (1920px+)
-
----
-
-## Contribuir
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
----
-
-## Licencia
-
-Este proyecto es privado y pertenece a Movitex.
-
----
-
-## Equipo
-
-Desarrollado con ❤️ por el equipo de Movitex
-
----
-
-## Contacto
-
-Para consultas o soporte, contacta a través de la sección de contactos en la aplicación.
 
 ---
 
