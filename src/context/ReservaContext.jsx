@@ -5,6 +5,15 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import { useNavigate } from 'react-router-dom'
 import { getDNIData, validateDNI } from '../services/dniService'
 import { supabase } from '../supabase/supabase'
+import { 
+  generateTransactionId, 
+  getTokenSession, 
+  createIzipayConfig, 
+  loadIzipayForm,
+  isPaymentSuccessful,
+  getPaymentErrorMessage,
+  guardarTransaccion
+} from '../services/izipayService'
 
 // Crear el contexto
 const ReservaContext = createContext()
@@ -55,6 +64,11 @@ export const ReservaProvider = ({ children }) => {
   const [datosBoleta, setDatosBoleta] = useState(null)              // datos de la boleta
   const [cargandoBoleta, setCargandoBoleta] = useState(false)       // cargando boleta
   const [errorBoleta, setErrorBoleta] = useState(null)              // errores al obtener boleta
+
+  // Estados de Izipay
+  const [izipayToken, setIzipayToken] = useState(null)              // token de sesion de Izipay
+  const [cargandoIzipay, setCargandoIzipay] = useState(false)       // cargando checkout de Izipay
+  const [transactionData, setTransactionData] = useState(null)      // datos de la transaccion
 
   // Función para inicializar reserva desde sessionStorage
   const inicializarReserva = useCallback((allowEmpty = false, forzarReinicio = false, nuevosAsientos = null, nuevoIdViaje = null, nuevoDatosViaje = null, nuevoTotal = null, nuevoCronometro = null) => {
@@ -798,6 +812,292 @@ export const ReservaProvider = ({ children }) => {
     aceptaPoliticas, totalPrecio, correo, telefono, datosViaje, navigate
   ])
 
+  // funcion principal: procesar pago con Izipay y crear reserva
+  // primero abre el checkout de Izipay, luego crea la reserva en BD
+  const procesarPagoConIzipay = useCallback(async () => {
+    if (procesandoPago || cargandoIzipay) return
+
+    try {
+      // ============================================================
+      // PASO 1: VALIDACIONES PREVIAS
+      // ============================================================
+      setProcesandoPago(true)
+      setErrorPago(null)
+
+      // Validar que tengamos todos los datos necesarios
+      if (!asientosReservados.length || !pasajeros.length) {
+        throw new Error('No hay datos de reserva disponibles')
+      }
+
+      if (!idViaje) {
+        throw new Error('No se ha seleccionado un viaje válido')
+      }
+
+      if (!aceptaPoliticas) {
+        throw new Error('Debe aceptar las políticas de privacidad')
+      }
+
+      // Validar datos de pasajeros
+      for (let i = 0; i < pasajeros.length; i++) {
+        const pasajero = pasajeros[i]
+        if (!pasajero.numeroDocumento || !pasajero.nombre || !pasajero.apellido || 
+            !pasajero.fechaNacimiento || !pasajero.genero) {
+          throw new Error(`Datos incompletos para el pasajero ${i + 1}`)
+        }
+      }
+
+      // Validar correos para usuarios anónimos
+      const userId = localStorage.getItem('id_usuario')
+      const esUsuarioLogueado = !!userId
+
+      if (!esUsuarioLogueado) {
+        if (!correo || correo.trim() === '') {
+          throw new Error('El correo electrónico es obligatorio')
+        }
+        if (!telefono || telefono.trim() === '') {
+          throw new Error('El teléfono es obligatorio')
+        }
+        if (correo !== confirmacionCorreo) {
+          throw new Error('Los correos electrónicos no coinciden')
+        }
+      }
+
+      console.log('✅ Validaciones previas completadas')
+
+      // ============================================================
+      // PASO 2: GENERAR DATOS DE TRANSACCIÓN
+      // ============================================================
+      const { transactionId, orderNumber } = generateTransactionId()
+      setTransactionData({ transactionId, orderNumber })
+      
+      console.log('📝 Datos de transacción generados:', { transactionId, orderNumber })
+
+      // ============================================================
+      // PASO 3: OBTENER TOKEN DE IZIPAY
+      // ============================================================
+      setCargandoIzipay(true)
+      
+      const tokenResponse = await getTokenSession(
+        transactionId, 
+        totalPrecio.toFixed(2), 
+        orderNumber
+      )
+
+      if (!tokenResponse.response?.token) {
+        throw new Error('No se pudo obtener el token de pago. Intente nuevamente.')
+      }
+
+      const token = tokenResponse.response.token
+      setIzipayToken(token)
+      
+      console.log('🔑 Token de Izipay obtenido exitosamente')
+
+      // ============================================================
+      // PASO 4: PREPARAR DATOS DE FACTURACIÓN
+      // ============================================================
+      const primerPasajero = pasajeros[0]
+      const billingData = {
+        firstName: primerPasajero.nombre || 'Cliente',
+        lastName: primerPasajero.apellido || 'Movitex',
+        email: correo || 'cliente@movitex.com',
+        phoneNumber: telefono || '999999999',
+        document: primerPasajero.numeroDocumento || '00000000',
+        street: 'Av. Principal',
+        city: 'Lima',
+        state: 'Lima',
+        postalCode: '15001',
+      }
+
+      // ============================================================
+      // PASO 5: CREAR CONFIGURACIÓN DE IZIPAY
+      // ============================================================
+      const izipayConfig = createIzipayConfig({
+        transactionId,
+        orderNumber,
+        amount: totalPrecio.toFixed(2),
+        billingData,
+        productName: `Pasajes ${datosViaje?.ciudadOrigen?.nombre || ''} - ${datosViaje?.ciudadDestino?.nombre || ''}`
+      })
+
+      console.log('⚙️ Configuración de Izipay creada')
+
+      // ============================================================
+      // PASO 6: CALLBACK DE RESPUESTA DE PAGO
+      // ============================================================
+      const callbackResponsePayment = async (response) => {
+        console.log('💳 === RESPUESTA DE PAGO RECIBIDA ===')
+        console.log('Respuesta completa:', response)
+        console.log('Código:', response?.code)
+
+        try {
+          // Validar que la respuesta no esté vacía
+          if (!response) {
+            console.error('❌ Respuesta vacía del procesador')
+            setErrorPago('No se recibió respuesta del procesador de pagos')
+            navigate('/inicio')
+            return
+          }
+
+          // SOLO código '00' es pago exitoso
+          if (isPaymentSuccessful(response)) {
+            console.log('✅ PAGO EXITOSO - Procesando reserva...')
+            
+            setProcesandoPago(true)
+
+            // Crear reserva en la base de datos
+            const reservaData = await crearReservaEnBD()
+            
+            if (!reservaData || !reservaData.id_reserva) {
+              throw new Error('Error al crear la reserva en la base de datos')
+            }
+
+            console.log('✅ Reserva creada con ID:', reservaData.id_reserva)
+
+            // Guardar transacción de Izipay en BD
+            await guardarTransaccion(response, reservaData.id_reserva)
+            
+            console.log('✅ Transacción de pago guardada')
+
+            // Limpiar sessionStorage
+            console.log('🧹 Limpiando sessionStorage...')
+            sessionStorage.removeItem('movitex_reserva_completa')
+            sessionStorage.removeItem('movitex_reserva_data')
+            sessionStorage.removeItem('movitex_timer_start')
+            sessionStorage.removeItem('movitex_timer_limit')
+            sessionStorage.removeItem('movitex_formulario_data')
+
+            // Redirigir a confirmación
+            console.log('🎉 Redirigiendo a página de confirmación...')
+            navigate(`/pasajes-bus/confirmacion/${reservaData.id_reserva}`)
+
+          } else {
+            // Cualquier otro código es error
+            console.log('❌ PAGO NO EXITOSO - Código:', response.code)
+            const errorMsg = getPaymentErrorMessage(response)
+            console.log('Mensaje de error:', errorMsg)
+            
+            setErrorPago(errorMsg)
+            setProcesandoPago(false)
+            setCargandoIzipay(false)
+            
+            // Redirigir a inicio después de 2 segundos
+            setTimeout(() => {
+              console.log('🔄 Redirigiendo a inicio...')
+              navigate('/inicio')
+            }, 2000)
+          }
+
+        } catch (error) {
+          console.error('❌ Error en callback de pago:', error)
+          setErrorPago(error.message || 'Error al procesar el pago')
+          setProcesandoPago(false)
+          setCargandoIzipay(false)
+          
+          // Redirigir a inicio
+          setTimeout(() => {
+            navigate('/inicio')
+          }, 2000)
+        }
+      }
+
+      // ============================================================
+      // PASO 7: CARGAR FORMULARIO DE IZIPAY
+      // ============================================================
+      console.log('🚀 Cargando formulario de pago de Izipay...')
+      
+      loadIzipayForm(token, izipayConfig, callbackResponsePayment)
+      
+      setCargandoIzipay(false)
+      setProcesandoPago(false)
+
+    } catch (error) {
+      console.error('❌ Error al procesar pago con Izipay:', error)
+      setErrorPago(error.message)
+      setProcesandoPago(false)
+      setCargandoIzipay(false)
+      throw error
+    }
+  }, [
+    procesandoPago, cargandoIzipay, asientosReservados, pasajeros, idViaje, 
+    aceptaPoliticas, totalPrecio, correo, confirmacionCorreo, telefono, 
+    datosViaje, navigate
+  ])
+
+  // funcion auxiliar: crear reserva en BD (sin Izipay)
+  // se llama después de que el pago con Izipay sea exitoso
+  const crearReservaEnBD = async () => {
+    // obtener id del usuario desde localstorage
+    let userId = localStorage.getItem('id_usuario')
+    
+    // si no hay id_usuario directamente, intentar obtenerlo de movitex_user_data
+    if (!userId) {
+      const userData = localStorage.getItem('movitex_user_data')
+      if (userData) {
+        const userInfo = JSON.parse(userData)
+        userId = userInfo.id_usuario || userInfo.id
+      }
+    }
+
+    // determinar si es usuario logueado o anonimo
+    const esUsuarioLogueado = !!userId
+
+    // preparar array de pasajeros en el formato que espera la funcion sql
+    const pasajerosParaSQL = pasajeros.map((pasajero) => ({
+      numeroDocumento: pasajero.numeroDocumento?.toString() || '',
+      nombre: pasajero.nombre?.toString() || '',
+      apellido: pasajero.apellido?.toString() || '',
+      fechaNacimiento: pasajero.fechaNacimiento?.toString() || '',
+      genero: pasajero.genero?.toString() || '',
+      id_asiento: parseInt(pasajero.id_asiento) || 0
+    }))
+
+    let data, error
+
+    // caso 1: usuarios logueados
+    if (esUsuarioLogueado) {
+      console.log('💾 Creando reserva para usuario logueado:', userId)
+      
+      const response = await supabase.rpc('crear_reserva_usuario_logueado', {
+        p_id_usuario: userId,
+        p_id_viaje: idViaje,
+        p_total_pagado: totalPrecio,
+        p_pasajeros: pasajerosParaSQL
+      })
+      
+      data = response.data
+      error = response.error
+    } 
+    // caso 2: usuarios anonimos
+    else {
+      console.log('💾 Creando reserva para usuario anónimo')
+      
+      const response = await supabase.rpc('crear_reserva_anonima', {
+        p_id_viaje: idViaje,
+        p_total_pagado: totalPrecio,
+        p_pasajeros: pasajerosParaSQL,
+        p_correo: correo.trim(),
+        p_telefono: telefono.trim()
+      })
+      
+      data = response.data
+      error = response.error
+    }
+
+    if (error) {
+      console.error('❌ Error al crear reserva:', error)
+      throw new Error(`Error al procesar la reserva: ${error.message}`)
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error('No se recibió respuesta del servidor')
+    }
+
+    const resultado = data[0]
+    console.log('✅ Reserva creada exitosamente:', resultado)
+
+    return resultado
+  }
+
   // Función para obtener datos de boleta desde el backend
   // Consulta todos los datos de la reserva para mostrar en la boleta
   const obtenerBoletaViaje = useCallback(async (idReserva) => {
@@ -902,6 +1202,11 @@ export const ReservaProvider = ({ children }) => {
     datosBoleta,
     cargandoBoleta,
     errorBoleta,
+
+    // Estados de Izipay
+    izipayToken,
+    cargandoIzipay,
+    transactionData,
     
     // Estado de usuario logueado
     isUserLoggedIn: isUserLoggedIn(),
@@ -915,6 +1220,7 @@ export const ReservaProvider = ({ children }) => {
     formatTiempo,
     handlePasajeroChange,
     crearReserva,
+    procesarPagoConIzipay,
     obtenerBoletaViaje,
     
     // Setters para campos de contacto

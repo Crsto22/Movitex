@@ -5,6 +5,8 @@ import { useReserva } from '../context/ReservaContext';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
 import MovitexUltraFont from '../assets/services/MovitexUltra/MovitexUltra-Font.png';
+import IzipayLogo from '../img/Izipay.png';
+
 const Reserva = () => {
   // Función para obtener datos del servicio
   const getDatosServicio = (tipoServicio) => {
@@ -67,6 +69,7 @@ const Reserva = () => {
     formatTiempo,
     handlePasajeroChange,
     crearReserva,
+    procesarPagoConIzipay,
     
     // Setters
     setCorreo,
@@ -85,8 +88,10 @@ const Reserva = () => {
     if (procesandoPago) return;
     
     try {
-      await crearReserva();
-      // La función crearReserva maneja la redirección y limpieza
+      // Procesar pago con Izipay
+      console.log(' Procesando pago con Izipay...');
+      await procesarPagoConIzipay();
+      // La función procesarPagoConIzipay maneja la redirección y limpieza
     } catch (error) {
       console.error('Error al procesar pago:', error);
       // El error ya se maneja en el contexto
@@ -367,77 +372,42 @@ const Reserva = () => {
                   </div>
                   {/* Métodos de pago */}
                   <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-                    {/* Yape/Plin */}
-                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    {/* Izipay - Tarjeta de Crédito/Débito */}
+                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-3 sm:p-4 border-2 border-[#f0251f] rounded-lg bg-gradient-to-r from-white to-blue-50 hover:shadow-md transition-all">
                       <input
                         type="radio"
                         name="metodoPago"
-                        value="yape-plin"
-                        checked={metodoPago === 'yape-plin'}
+                        value="izipay"
+                        checked={metodoPago === 'izipay'}
                         onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
                       />
-                      <span className="text-xs sm:text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Paga con
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-purple-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Yape
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-500" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        o
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Plin
-                      </span>
-                      <div className="flex space-x-1 sm:space-x-2 ml-auto">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-600 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">Y</span>
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1">
+                        <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
+                          <img 
+                            src={IzipayLogo} 
+                            alt="Izipay" 
+                            className="h-8 sm:h-10 w-auto object-contain"
+                          />
                         </div>
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">P</span>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-sm sm:text-base font-bold text-gray-800" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                              Tarjetas de Crédito / Débito
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </label>
-
-                    {/* Tarjeta de Crédito/Débito */}
-                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="metodoPago"
-                        value="tarjeta"
-                        checked={metodoPago === 'tarjeta'}
-                        onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
-                      />
-                      <span className="text-xs sm:text-sm font-semibold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Tarjeta Crédito/Débito
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-blue-600" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                        Openpay
-                      </span>
-                    </label>
-
-                    {/* PagoEfectivo */}
-                    <label className="flex items-center space-x-2 sm:space-x-3 cursor-pointer p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <input
-                        type="radio"
-                        name="metodoPago"
-                        value="pagoefectivo"
-                        checked={metodoPago === 'pagoefectivo'}
-                        onChange={(e) => setMetodoPago(e.target.value)}
-                        className="w-3 h-3 sm:w-4 sm:h-4 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
-                      />
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <div className="w-6 h-5 sm:w-8 sm:h-6 bg-yellow-500 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">P</span>
+                        <div className="flex flex-col items-end justify-center space-y-1">
+                          <div className="flex items-center space-x-1">
+                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-xs font-semibold text-green-600">Seguro</span>
+                          </div>
                         </div>
-                        <span className="text-xs sm:text-sm font-bold text-gray-700" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
-                          PagoEfectivo
-                        </span>
                       </div>
                     </label>
                   </div>
-
                   {/* Aceptar políticas */}
                   <div className="mb-4 sm:mb-6">
                     <label className="flex items-start space-x-2 sm:space-x-3 cursor-pointer">
@@ -462,7 +432,7 @@ const Reserva = () => {
                     onClick={handlePagar}
                     className={`w-full py-3 sm:py-4 rounded-lg text-white font-bold text-base sm:text-lg transition-all duration-200 flex items-center justify-center ${
                       (aceptaPoliticas && metodoPago && !procesandoPago)
-                        ? 'bg-[#f0251f] hover:bg-[#d01f1b] cursor-pointer'
+                        ? 'bg-gradient-to-r from-[#f0251f] to-[#d01f1b] hover:from-[#d01f1b] hover:to-[#b01816] shadow-lg hover:shadow-xl cursor-pointer'
                         : 'bg-gray-400 cursor-not-allowed'
                     }`}
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
@@ -474,7 +444,12 @@ const Reserva = () => {
                         <span className="text-sm sm:text-base">PROCESANDO...</span>
                       </>
                     ) : (
-                      <span className="text-sm sm:text-base">PAGAR</span>
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span className="text-sm sm:text-base">PAGAR CON TARJETA</span>
+                      </>
                     )}
                   </button>
                 </div>
@@ -737,6 +712,9 @@ const Reserva = () => {
           </div>
         </div>
       )}
+      
+      {/* Contenedor para el checkout de Izipay (se renderiza como pop-up) */}
+      <div id="izipay-container"></div>
       
       {/* Footer */}
       <Footer />
