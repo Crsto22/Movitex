@@ -6,7 +6,8 @@ import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
 import MovitexUltraFont from '../assets/services/MovitexUltra/MovitexUltra-Font.png';
 import IzipayLogo from '../img/Izipay.png';
-
+//cambios de IzipayLogo
+//cambios
 const Reserva = () => {
   // Función para obtener datos del servicio
   const getDatosServicio = (tipoServicio) => {
