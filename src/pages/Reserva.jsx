@@ -5,9 +5,7 @@ import { useReserva } from '../context/ReservaContext';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
 import MovitexUltraFont from '../assets/services/MovitexUltra/MovitexUltra-Font.png';
-import IzipayLogo from '../img/Izipay.png';
-//cambios de IzipayLogo
-//cambios
+
 const Reserva = () => {
   // Función para obtener datos del servicio
   const getDatosServicio = (tipoServicio) => {
@@ -384,12 +382,10 @@ const Reserva = () => {
                         className="w-4 h-4 sm:w-5 sm:h-5 text-[#f0251f] border-gray-300 focus:ring-[#f0251f] focus:ring-2"
                       />
                       <div className="flex items-center space-x-2 sm:space-x-3 flex-1">
-                        <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
-                          <img 
-                            src={IzipayLogo} 
-                            alt="Izipay" 
-                            className="h-8 sm:h-10 w-auto object-contain"
-                          />
+                        <div className="flex items-center justify-center bg-white rounded-lg px-3 py-2 border border-gray-200">
+                          <span className="text-xl sm:text-2xl font-bold text-[#00a19c]" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                            Izipay
+                          </span>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
