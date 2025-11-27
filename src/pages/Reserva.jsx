@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Reserva/Navbar';
 import Footer from '../components/Footer';
 import { useReserva } from '../context/ReservaContext';
@@ -27,6 +28,39 @@ const Reserva = () => {
       }
     };
     return servicios[tipoServicio] || servicios.movitex_one;
+  };
+
+  const navigate = useNavigate();
+  
+  // Estado del modal de error
+  const [modalAsientosOcupados, setModalAsientosOcupados] = useState(false);
+  const [asientosOcupadosList, setAsientosOcupadosList] = useState('');
+
+  // Obtener datos del usuario desde localStorage
+  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('movitex_user_data');
+    if (userData) {
+      try {
+        setUsuarioLogueado(JSON.parse(userData));
+      } catch (error) {
+        console.error('Error al parsear datos de usuario:', error);
+      }
+    }
+  }, []);
+
+  // Función para auto-completar datos del primer pasajero con datos del usuario
+  const autocompletarConMisDatos = () => {
+    if (!usuarioLogueado || pasajeros.length === 0) return;
+
+    // Auto-completar el primer pasajero (índice 0)
+    // El cuarto parámetro 'true' evita que se dispare la búsqueda automática de DNI
+    handlePasajeroChange(0, 'numeroDocumento', usuarioLogueado.dni || '', true);
+    handlePasajeroChange(0, 'nombre', usuarioLogueado.nombre || '');
+    handlePasajeroChange(0, 'apellido', usuarioLogueado.apellido || '');
+    handlePasajeroChange(0, 'fechaNacimiento', usuarioLogueado.fecha_nacimiento || '');
+    handlePasajeroChange(0, 'genero', usuarioLogueado.genero || '');
   };
 
   // Consumir el contexto de reserva
@@ -69,6 +103,7 @@ const Reserva = () => {
     handlePasajeroChange,
     crearReserva,
     procesarPagoConIzipay,
+    verificarAsientosDisponibles,
     
     // Setters
     setCorreo,
@@ -82,19 +117,37 @@ const Reserva = () => {
 
   // La inicialización se maneja automáticamente en el ReservaContext
 
-  // Función para manejar el pago
+  // Función para manejar el pago con verificación
   const handlePagar = async () => {
     if (procesandoPago) return;
     
     try {
-      // Procesar pago con Izipay
-      console.log(' Procesando pago con Izipay...');
+      // ⭐ PASO 1: VERIFICAR DISPONIBILIDAD DE ASIENTOS
+      console.log('🔍 Verificando disponibilidad de asientos...');
+      const verificacion = await verificarAsientosDisponibles();
+      
+      if (!verificacion.disponibles) {
+        // ❌ Los asientos ya están reservados
+        console.log('❌ Asientos no disponibles:', verificacion.asientosOcupados);
+        setAsientosOcupadosList(verificacion.asientosOcupados);
+        setModalAsientosOcupados(true);
+        return;
+      }
+      
+      // ✅ Asientos disponibles - proceder con el pago
+      console.log('✅ Asientos disponibles - Procesando pago con Izipay...');
       await procesarPagoConIzipay();
       // La función procesarPagoConIzipay maneja la redirección y limpieza
     } catch (error) {
       console.error('Error al procesar pago:', error);
       // El error ya se maneja en el contexto
     }
+  };
+
+  // Función para cerrar modal y regresar al inicio
+  const handleRegresarInicio = () => {
+    setModalAsientosOcupados(false);
+    navigate('/inicio');
   };
 
   return (
@@ -177,6 +230,23 @@ const Reserva = () => {
                 <div className="space-y-6">
                   {pasajeros.map((pasajero, index) => (
                     <div key={pasajero.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                      {/* Botón "Actualizar con mis datos" - Solo para el primer pasajero y usuario autenticado */}
+                      {index === 0 && usuarioLogueado && (
+                        <div className="mb-4 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={autocompletarConMisDatos}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#f0251f] text-white rounded-lg hover:bg-[#d91f1a] transition-colors text-sm font-medium"
+                            style={{ fontFamily: 'MusticaPro, sans-serif' }}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Actualizar con mis datos
+                          </button>
+                        </div>
+                      )}
+
                       {/* Primera fila */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_1fr] gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div className="flex items-center sm:block">
@@ -705,6 +775,55 @@ const Reserva = () => {
               className="w-full bg-red-600 text-white btn py-2 rounded-full font-semibold hover:bg-red-700 transition-colors"
             >
               Entendido
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de asientos ocupados */}
+      {modalAsientosOcupados && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 transform animate-fade-in">
+            {/* Icono de error */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Título */}
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 text-center" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+              Asientos No Disponibles
+            </h3>
+
+            {/* Mensaje */}
+            <p className="text-gray-700 mb-2 text-center" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+              Los siguientes asientos ya están en proceso de reserva:
+            </p>
+
+            {/* Lista de asientos ocupados */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-700 font-bold text-center text-lg" style={{ fontFamily: 'MusticaPro, sans-serif' }}>
+                {asientosOcupadosList}
+              </p>
+            </div>
+
+            <p className="text-gray-600 text-sm text-center mb-6" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
+              Por favor, selecciona otros asientos para continuar con tu reserva.
+            </p>
+
+            {/* Botón */}
+            <button
+              onClick={handleRegresarInicio}
+              className="w-full bg-gradient-to-r from-[#f0251f] to-[#d01f1b] text-white py-3 rounded-lg font-bold text-base sm:text-lg hover:from-[#d01f1b] hover:to-[#b01816] transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+              style={{ fontFamily: 'MusticaPro, sans-serif' }}
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Regresar y Seleccionar Otros Asientos
             </button>
           </div>
         </div>

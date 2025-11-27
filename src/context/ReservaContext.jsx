@@ -403,7 +403,7 @@ export const ReservaProvider = ({ children }) => {
   }, [])
 
   // Función para manejar cambios en pasajeros
-  const handlePasajeroChange = (index, field, value) => {
+  const handlePasajeroChange = (index, field, value, skipDNIValidation = false) => {
     const newPasajeros = [...pasajeros]
 
     // Si es el campo de número de documento, manejar la lógica de DNI
@@ -414,8 +414,10 @@ export const ReservaProvider = ({ children }) => {
       newPasajeros[index][field] = value
       setPasajeros(newPasajeros)
 
-      // Manejar la búsqueda de DNI
-      handleDNIChange(index, value, dniAnterior)
+      // Manejar la búsqueda de DNI solo si NO se debe saltar la validación
+      if (!skipDNIValidation) {
+        handleDNIChange(index, value, dniAnterior)
+      }
     } else {
       // Para otros campos, actualizar normalmente
       newPasajeros[index][field] = value
@@ -812,6 +814,166 @@ export const ReservaProvider = ({ children }) => {
     aceptaPoliticas, totalPrecio, correo, telefono, datosViaje, navigate
   ])
 
+  // ============================================================
+  // VERIFICAR SI LOS ASIENTOS ESTÁN DISPONIBLES
+  // ============================================================
+  const verificarAsientosDisponibles = useCallback(async () => {
+    try {
+      console.log(' Verificando disponibilidad de asientos...')
+
+      // Convertir IDs a INTEGER (los id_asiento son INTEGER, no UUID)
+      const idsAsientos = asientosReservados.map(a => parseInt(a.id_asiento))
+
+      console.log(' Verificando', idsAsientos.length, 'asientos:', idsAsientos)
+      console.log(' Del viaje:', idViaje)
+
+      // Llamar a la función SQL con tipos correctos: INT[], UUID
+      const { data, error } = await supabase.rpc('verificar_asientos_disponibles', {
+        p_ids_asientos: idsAsientos,  // INTEGER[] 
+        p_id_viaje: idViaje            // UUID 
+      })
+      
+      if (error) {
+        console.error(' Error al verificar asientos:', error)
+        throw new Error('Error al verificar disponibilidad de asientos')
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('No se recibió respuesta del servidor')
+      }
+
+      const resultado = data[0]
+      
+      if (!resultado.disponibles) {
+        console.log(` Asientos no disponibles:`, resultado.asientos_ocupados)
+        return {
+          disponibles: false,
+          asientosOcupados: resultado.asientos_ocupados,
+          countOcupados: resultado.count_ocupados,
+          mensaje: `Los siguientes asientos ya están reservados: ${resultado.asientos_ocupados}`
+        }
+      }
+
+      console.log(' Todos los asientos están disponibles')
+      return { disponibles: true, asientosOcupados: null, countOcupados: 0, mensaje: 'Asientos disponibles' }
+
+    } catch (error) {
+      console.error(' Error al verificar asientos:', error)
+      throw error
+    }
+  }, [asientosReservados, idViaje])
+
+  // ============================================================
+  // CREAR RESERVA PENDIENTE
+  // ============================================================
+  const crearReservaPendiente = useCallback(async () => {
+    try {
+      console.log(' Creando reserva PENDIENTE...')
+
+      let userId = localStorage.getItem('id_usuario')
+      if (!userId) {
+        const userData = localStorage.getItem('movitex_user_data')
+        if (userData) {
+          const userInfo = JSON.parse(userData)
+          userId = userInfo.id_usuario || userInfo.id
+        }
+      }
+
+      const esUsuarioLogueado = !!userId
+
+      const pasajerosParaSQL = pasajeros.map(pasajero => ({
+        numeroDocumento: pasajero.numeroDocumento?.toString() || '',
+        nombre: pasajero.nombre?.toString() || '',
+        apellido: pasajero.apellido?.toString() || '',
+        fechaNacimiento: pasajero.fechaNacimiento?.toString() || '',
+        genero: pasajero.genero?.toString() || '',
+        id_asiento: parseInt(pasajero.id_asiento) || 0
+      }))
+
+      let data, error
+
+      if (esUsuarioLogueado) {
+        console.log(' Creando reserva PENDIENTE para usuario logueado:', userId)
+        
+        const response = await supabase.rpc('crear_reserva_pendiente_usuario_logueado', {
+          p_id_usuario: userId,
+          p_id_viaje: idViaje,
+          p_total_pagado: totalPrecio,
+          p_pasajeros: pasajerosParaSQL
+        })
+        
+        data = response.data
+        error = response.error
+      } else {
+        console.log(' Creando reserva PENDIENTE para usuario anónimo')
+        
+        const response = await supabase.rpc('crear_reserva_pendiente_anonima', {
+          p_id_viaje: idViaje,
+          p_total_pagado: totalPrecio,
+          p_pasajeros: pasajerosParaSQL,
+          p_correo: correo.trim(),
+          p_telefono: telefono.trim()
+        })
+        
+        data = response.data
+        error = response.error
+      }
+
+      if (error) {
+        console.error(' Error al crear reserva pendiente:', error)
+        throw new Error(`Error al crear reserva: ${error.message}`)
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('No se recibió respuesta del servidor')
+      }
+
+      const resultado = data[0]
+      console.log(' Reserva PENDIENTE creada:', resultado)
+
+      sessionStorage.setItem('movitex_id_reserva_pendiente', resultado.id_reserva)
+
+      return resultado
+
+    } catch (error) {
+      console.error(' Error al crear reserva pendiente:', error)
+      throw error
+    }
+  }, [pasajeros, idViaje, totalPrecio, correo, telefono])
+
+  // ============================================================
+  // CONFIRMAR RESERVA PENDIENTE
+  // ============================================================
+  const confirmarReservaPendiente = useCallback(async (idReserva) => {
+    try {
+      console.log(' Confirmando reserva pendiente:', idReserva)
+
+      const { data, error } = await supabase.rpc('confirmar_reserva_pendiente', {
+        p_id_reserva: idReserva
+      })
+
+      if (error) {
+        console.error(' Error al confirmar reserva:', error)
+        throw new Error(`Error al confirmar reserva: ${error.message}`)
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('No se recibió respuesta del servidor')
+      }
+
+      const resultado = data[0]
+      console.log(' Reserva confirmada:', resultado)
+
+      sessionStorage.removeItem('movitex_id_reserva_pendiente')
+
+      return { id_reserva: idReserva, ...resultado }
+
+    } catch (error) {
+      console.error(' Error al confirmar reserva:', error)
+      throw error
+    }
+  }, [])
+
   // funcion principal: procesar pago con Izipay y crear reserva
   // primero abre el checkout de Izipay, luego crea la reserva en BD
   const procesarPagoConIzipay = useCallback(async () => {
@@ -940,21 +1102,17 @@ export const ReservaProvider = ({ children }) => {
 
           // SOLO código '00' es pago exitoso
           if (isPaymentSuccessful(response)) {
-            console.log('✅ PAGO EXITOSO - Procesando reserva...')
+            console.log('✅ PAGO EXITOSO - Confirmando reserva...')
             
             setProcesandoPago(true)
 
-            // Crear reserva en la base de datos
-            const reservaData = await crearReservaEnBD()
-            
-            if (!reservaData || !reservaData.id_reserva) {
-              throw new Error('Error al crear la reserva en la base de datos')
-            }
+            // Confirmar reserva pendiente (cambiar de 'pendiente' a 'completada')
+            await confirmarReservaPendiente(idReservaPendiente)
 
-            console.log('✅ Reserva creada con ID:', reservaData.id_reserva)
+            console.log('✅ Reserva confirmada con ID:', idReservaPendiente)
 
             // Guardar transacción de Izipay en BD
-            await guardarTransaccion(response, reservaData.id_reserva)
+            await guardarTransaccion(response, idReservaPendiente)
             
             console.log('✅ Transacción de pago guardada')
 
@@ -968,7 +1126,9 @@ export const ReservaProvider = ({ children }) => {
 
             // Redirigir a confirmación
             console.log('🎉 Redirigiendo a página de confirmación...')
-            navigate(`/pasajes-bus/confirmacion/${reservaData.id_reserva}`)
+            navigate(`/pasajes-bus/confirmacion/${idReservaPendiente}`)
+
+            
 
           } else {
             // Cualquier otro código es error
@@ -1001,8 +1161,17 @@ export const ReservaProvider = ({ children }) => {
       }
 
       // ============================================================
-      // PASO 7: CARGAR FORMULARIO DE IZIPAY
+      // PASO 7: CREAR RESERVA PENDIENTE
       // ============================================================
+      console.log('📝 Creando reserva PENDIENTE antes de cargar Izipay...')
+      
+      const reservaPendiente = await crearReservaPendiente()
+      const idReservaPendiente = reservaPendiente.id_reserva
+      
+      console.log('✅ Reserva PENDIENTE creada con ID:', idReservaPendiente)
+
+      // ============================================================
+      // PASO 8: CARGAR FORMULARIO DE IZIPAY
       console.log('🚀 Cargando formulario de pago de Izipay...')
       
       loadIzipayForm(token, izipayConfig, callbackResponsePayment)
@@ -1020,10 +1189,8 @@ export const ReservaProvider = ({ children }) => {
   }, [
     procesandoPago, cargandoIzipay, asientosReservados, pasajeros, idViaje, 
     aceptaPoliticas, totalPrecio, correo, confirmacionCorreo, telefono, 
-    datosViaje, navigate
+    datosViaje, navigate, crearReservaPendiente, confirmarReservaPendiente
   ])
-
- 
 
   // Función para obtener datos de boleta desde el backend
   // Consulta todos los datos de la reserva para mostrar en la boleta
@@ -1149,6 +1316,11 @@ export const ReservaProvider = ({ children }) => {
     crearReserva,
     procesarPagoConIzipay,
     obtenerBoletaViaje,
+    
+    // Nuevas funciones para reservas pendientes
+    verificarAsientosDisponibles,
+    crearReservaPendiente,
+    confirmarReservaPendiente,
     
     // Setters para campos de contacto
     setCorreo,
