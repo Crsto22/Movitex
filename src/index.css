@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
 /* Fuente personalizada MusticaPro */
 @font-face {
   font-family: 'MusticaPro';
@@ -15,4 +16,29 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+}
+
+/* Forzar fondo blanco y texto oscuro en inputs para visibilidad en modo oscuro */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  background-color: white !important;
+  color: #1f2937 !important;
+  /* text-gray-800 */
+}
+
+/* Asegurar que los placeholders también sean visibles */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  /* text-gray-400 */
 }
