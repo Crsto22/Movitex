@@ -105,7 +105,7 @@ const ReporteRutasPDF = ({ ingresosPorRuta, fechaInicio, fechaFin }) => {
 
         {/* Tabla de Ingresos por Ruta */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 Ingresos por Ruta (Ordenado por Mayor Ingreso)</Text>
+          <Text style={styles.sectionTitle}>Ingresos por Ruta (Ordenado por Mayor Ingreso)</Text>
           
           {ingresosPorRuta && ingresosPorRuta.length > 0 ? (
             <View style={styles.table}>
@@ -146,7 +146,7 @@ const ReporteRutasPDF = ({ ingresosPorRuta, fechaInicio, fechaFin }) => {
 
         {/* Resumen */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📈 Resumen del Período</Text>
+          <Text style={styles.sectionTitle}>Resumen del Período</Text>
           <View style={{marginTop: 10, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 5}}>
             <Text style={{fontSize: 10, color: '#333333', marginBottom: 5}}>
               • Total de rutas activas: {ingresosPorRuta?.length || 0}
