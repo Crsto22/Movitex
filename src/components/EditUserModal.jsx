@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { X, User, Phone, FileText, Mail, Calendar, Users } from 'lucide-react';
+import { X, User, Phone, FileText, Mail, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -325,19 +325,14 @@ const EditUserModal = ({ isOpen, onClose, userData }) => {
                     >
                       Fecha de Nacimiento
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar size={20} className="text-gray-400" />
-                      </div>
-                      <input
-                        id="fecha_nacimiento"
-                        type="date"
-                        value={formData.fecha_nacimiento}
-                        onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
-                        disabled={loading}
-                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
+                    <input
+                      id="fecha_nacimiento"
+                      type="date"
+                      value={formData.fecha_nacimiento}
+                      onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
+                      disabled={loading}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
                   </div>
 
                   {/* Campo de género */}

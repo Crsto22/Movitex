@@ -10,8 +10,6 @@ import {
   CreditCard,
   Ticket,
   ArrowRight,
-  Download,
-  Share2,
 } from "lucide-react";
 import Confetti from "react-canvas-confetti";
 import Lottie from "lottie-react";
@@ -97,24 +95,6 @@ const Confirmacion = () => {
     limpiarReserva();
     // Limpiar también el estado de reserva exitosa
     navigate("/inicio");
-  };
-
-  const handleDescargarBoleto = () => {
-    toast.success("Función de descarga próximamente disponible");
-  };
-
-  const handleCompartir = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: "Mi reserva en Movitex",
-        text: `He reservado mi viaje con Movitex. ID de reserva: ${id}`,
-        url: window.location.href,
-      });
-    } else {
-      // Fallback para navegadores que no soportan Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Enlace copiado al portapapeles");
-    }
   };
 
   const formatearFecha = (fecha) => {
@@ -542,29 +522,13 @@ const Confirmacion = () => {
                 </div>
 
                 {/* Botones de Acción */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 px-2">
-                  <button
-                    onClick={handleDescargarBoleto}
-                    className="flex-1 flex items-center justify-center space-x-2 bg-[#f0251f] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-[#d91f1a] transition-colors font-medium text-sm sm:text-base"
-                    style={{ fontFamily: "MusticaPro, sans-serif" }}
-                  >
-                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Descargar Boletos</span>
-                  </button>
-                  <button
-                    onClick={handleCompartir}
-                    className="flex-1 flex items-center justify-center space-x-2 bg-gray-100 text-gray-900 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm sm:text-base"
-                    style={{ fontFamily: "MusticaPro, sans-serif" }}
-                  >
-                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Compartir</span>
-                  </button>
+                <div className="flex justify-center mt-6 sm:mt-8 px-2">
                   <button
                     onClick={handleVolverInicio}
-                    className="flex-1 flex items-center justify-center space-x-2 bg-white text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm sm:text-base"
+                    className="flex items-center justify-center space-x-2 bg-[#f0251f] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-[#d91f1a] transition-colors font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
                     style={{ fontFamily: "MusticaPro, sans-serif" }}
                   >
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     <span>Volver al Inicio</span>
                   </button>
                 </div>

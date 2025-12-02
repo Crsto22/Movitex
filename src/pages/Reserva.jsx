@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Reserva/Navbar';
 import Footer from '../components/Footer';
+import DatePicker from '../components/common/DatePicker';
 import { useReserva } from '../context/ReservaContext';
 import MovitexOneFont from '../assets/services/MovitexOne/MovitexOne-Font.png';
 import MovitexProFont from '../assets/services/MovitexPro/MovitexPro-Font.png';
@@ -84,6 +85,7 @@ const Reserva = () => {
     
     // Estados de DNI
     loadingDNI,
+    errorMenores,
     
     // Estados de pago
     procesandoPago,
@@ -117,9 +119,18 @@ const Reserva = () => {
 
   // La inicialización se maneja automáticamente en el ReservaContext
 
+  // Verificar si hay errores de menores de edad
+  const hayErroresMenores = Object.values(errorMenores).some(error => error !== null && error !== undefined);
+
   // Función para manejar el pago con verificación
   const handlePagar = async () => {
     if (procesandoPago) return;
+    
+    // Validar que el teléfono tenga exactamente 9 dígitos
+    if (!telefono || telefono.length !== 9) {
+      setErrorPago('El número de teléfono debe tener exactamente 9 dígitos.');
+      return;
+    }
     
     try {
       // ⭐ PASO 1: VERIFICAR DISPONIBILIDAD DE ASIENTOS
@@ -320,12 +331,13 @@ const Reserva = () => {
                           <label className="block text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
                             Fecha de nacimiento
                           </label>
-                          <input
-                            type="date"
+                          <DatePicker
                             value={pasajero.fechaNacimiento || ''}
-                            onChange={(e) => handlePasajeroChange(index, 'fechaNacimiento', e.target.value)}
-                            className="w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#f0251f] text-xs sm:text-sm"
-                            style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}
+                            onChange={(fecha) => handlePasajeroChange(index, 'fechaNacimiento', fecha)}
+                            placeholder="DD/MM/AAAA"
+                            maxAge={120}
+                            disabled={loadingDNI[index]}
+                            mode="birthdate"
                           />
                         </div>
 
@@ -397,9 +409,16 @@ const Reserva = () => {
                       <input
                         type="tel"
                         value={telefono}
-                        onChange={(e) => !isUserLoggedIn && setTelefono(e.target.value)}
+                        onChange={(e) => {
+                          const valor = e.target.value.replace(/\D/g, '');
+                          if (valor.length <= 9) {
+                            !isUserLoggedIn && setTelefono(valor);
+                          }
+                        }}
                         readOnly={isUserLoggedIn}
-                        placeholder="999 999 999"
+                        placeholder="999999999"
+                        maxLength={9}
+                        pattern="[0-9]{9}"
                         className={`w-full h-10 sm:h-12 px-2 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm ${
                           isUserLoggedIn 
                             ? 'bg-gray-100 cursor-not-allowed' 
@@ -498,12 +517,12 @@ const Reserva = () => {
                   <button
                     onClick={handlePagar}
                     className={`w-full py-3 sm:py-4 rounded-lg text-white font-bold text-base sm:text-lg transition-all duration-200 flex items-center justify-center ${
-                      (aceptaPoliticas && metodoPago && !procesandoPago)
+                      (aceptaPoliticas && metodoPago && !procesandoPago && !hayErroresMenores)
                         ? 'bg-gradient-to-r from-[#f0251f] to-[#d01f1b] hover:from-[#d01f1b] hover:to-[#b01816] shadow-lg hover:shadow-xl cursor-pointer'
                         : 'bg-gray-400 cursor-not-allowed'
                     }`}
                     style={{ fontFamily: 'MusticaPro, sans-serif' }}
-                    disabled={!aceptaPoliticas || !metodoPago || procesandoPago}
+                    disabled={!aceptaPoliticas || !metodoPago || procesandoPago || hayErroresMenores}
                   >
                     {procesandoPago ? (
                       <>
@@ -725,7 +744,7 @@ const Reserva = () => {
                   className="text-lg font-bold text-red-800" 
                   style={{ fontFamily: 'MusticaPro, sans-serif' }}
                 >
-                  Error en el Pago
+                  Error 
                 </h3>
               </div>
             </div>
@@ -749,8 +768,13 @@ const Reserva = () => {
               </button>
               <button
                 onClick={() => {
+                  // Limpiar las fechas de nacimiento de los menores de edad
+                  Object.keys(errorMenores).forEach(index => {
+                    if (errorMenores[index]) {
+                      handlePasajeroChange(parseInt(index), 'fechaNacimiento', '');
+                    }
+                  });
                   setErrorPago(null);
-                  // Aquí podrías agregar lógica adicional como limpiar formulario o volver a intentar
                 }}
                 className="px-4 py-2 bg-[#f0251f] text-white rounded-lg hover:bg-[#d91f1a] transition-colors font-medium"
                 style={{ fontFamily: 'MusticaPro, sans-serif' }}

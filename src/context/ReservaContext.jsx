@@ -52,6 +52,7 @@ export const ReservaProvider = ({ children }) => {
 
   // Estados para consulta de dni (api externa)
   const [loadingDNI, setLoadingDNI] = useState({})                  // estado de carga por pasajero
+  const [errorMenores, setErrorMenores] = useState({})              // errores de validación de menores de edad
   const [inicializado, setInicializado] = useState(false)           // si ya se cargo la reserva
   const timeoutRefs = useRef({})                                    // timeouts para busqueda de dni
 
@@ -402,6 +403,76 @@ export const ReservaProvider = ({ children }) => {
     return `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`
   }, [])
 
+  // Función para calcular la edad a partir de una fecha de nacimiento
+  const calcularEdad = (fechaNacimiento) => {
+    if (!fechaNacimiento) return null
+    
+    const hoy = new Date()
+    const [año, mes, dia] = fechaNacimiento.split('-').map(Number)
+    const fechaNac = new Date(año, mes - 1, dia)
+    
+    let edad = hoy.getFullYear() - fechaNac.getFullYear()
+    const mesActual = hoy.getMonth()
+    const diaActual = hoy.getDate()
+    
+    // Ajustar edad si aún no ha cumplido años este año
+    if (mesActual < (mes - 1) || (mesActual === (mes - 1) && diaActual < dia)) {
+      edad--
+    }
+    
+    return edad
+  }
+
+  // Función para validar si un menor puede viajar
+  const validarMenorDeEdad = (index, fechaNacimiento) => {
+    if (!fechaNacimiento) {
+      setErrorMenores(prev => ({ ...prev, [index]: null }))
+      return true
+    }
+
+    const edad = calcularEdad(fechaNacimiento)
+    
+    // Si es mayor de 18, no hay problema
+    if (edad >= 18) {
+      setErrorMenores(prev => ({ ...prev, [index]: null }))
+      return true
+    }
+
+    // Si es menor de 18 y es el único pasajero, mostrar error
+    if (pasajeros.length === 1) {
+      const mensajeError = 'Los menores de edad no pueden viajar solos. Debe haber al menos un adulto acompañante.'
+      setErrorMenores(prev => ({ ...prev, [index]: mensajeError }))
+      setErrorPago(mensajeError)
+      return false
+    }
+
+    // Si hay múltiples pasajeros, verificar que haya al menos un adulto
+    const hayAdulto = pasajeros.some((p, i) => {
+      if (i === index) return false // No contar el pasajero actual
+      if (!p.fechaNacimiento) return false
+      const edadPasajero = calcularEdad(p.fechaNacimiento)
+      return edadPasajero >= 18
+    })
+
+    if (!hayAdulto) {
+      const mensajeError = 'Debe haber al menos un adulto (mayor de 18 años) acompañando al menor.'
+      setErrorMenores(prev => ({ ...prev, [index]: mensajeError }))
+      setErrorPago(mensajeError)
+      return false
+    }
+
+    // Si hay adulto, limpiar errores
+    setErrorMenores(prev => ({ ...prev, [index]: null }))
+    // Solo limpiar errorPago si no hay otros errores de menores
+    const hayOtrosErrores = Object.entries(errorMenores).some(([i, error]) => 
+      parseInt(i) !== index && error !== null && error !== undefined
+    )
+    if (!hayOtrosErrores) {
+      setErrorPago(null)
+    }
+    return true
+  }
+
   // Función para manejar cambios en pasajeros
   const handlePasajeroChange = (index, field, value, skipDNIValidation = false) => {
     const newPasajeros = [...pasajeros]
@@ -418,6 +489,23 @@ export const ReservaProvider = ({ children }) => {
       if (!skipDNIValidation) {
         handleDNIChange(index, value, dniAnterior)
       }
+    } else if (field === 'fechaNacimiento') {
+      // Actualizar fecha de nacimiento
+      newPasajeros[index][field] = value
+      setPasajeros(newPasajeros)
+      
+      // Validar si es menor de edad
+      validarMenorDeEdad(index, value)
+      
+      // Re-validar otros pasajeros menores si los hay
+      newPasajeros.forEach((p, i) => {
+        if (i !== index && p.fechaNacimiento) {
+          const edad = calcularEdad(p.fechaNacimiento)
+          if (edad < 18) {
+            validarMenorDeEdad(i, p.fechaNacimiento)
+          }
+        }
+      })
     } else {
       // Para otros campos, actualizar normalmente
       newPasajeros[index][field] = value
@@ -1286,6 +1374,7 @@ export const ReservaProvider = ({ children }) => {
     
     // Estados de DNI
     loadingDNI,
+    errorMenores,
     
     // Estados de pago
     procesandoPago,

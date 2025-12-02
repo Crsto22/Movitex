@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 // CSSTransition para animaciones de entrada/salida del modal
 import { CSSTransition } from 'react-transition-group';
 // Iconos de lucide-react para UI del formulario
-import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText, Search, Calendar, Users } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, User, Phone, FileText, Search, Users } from 'lucide-react';
 // Turnstile de Cloudflare para protección CAPTCHA contra bots
 import { Turnstile } from '@marsidev/react-turnstile';
 // Hook personalizado para acceder a funciones de autenticación
@@ -416,18 +416,13 @@ const RegisterModal = ({ isOpen, onClose, onBackToLogin }) => {
             >
               Fecha de Nacimiento
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Calendar size={20} className="text-gray-400" />
-              </div>
-              <input
-                id="fecha_nacimiento"
-                type="date"
-                value={formData.fecha_nacimiento}
-                onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
-              />
-            </div>
+            <input
+              id="fecha_nacimiento"
+              type="date"
+              value={formData.fecha_nacimiento}
+              onChange={(e) => handleInputChange('fecha_nacimiento', e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#f0251f] focus:ring-0 transition-colors duration-200 outline-none text-base"
+            />
           </div>
 
           {/* Campo de género */}
