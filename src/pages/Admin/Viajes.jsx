@@ -39,11 +39,13 @@ const Viajes = () => {
     id_bus: '',
     fecha: '',
     hora_salida: '',
-    hora_llegada: '',
     precio_base_piso1: '',
     precio_base_piso2: '',
     activo: true
   })
+
+  // Estado para hora de llegada calculada (solo para mostrar)
+  const [horaLlegadaCalculada, setHoraLlegadaCalculada] = useState('')
 
   // Filtrar viajes por búsqueda
   const filteredViajes = viajes.filter(viaje =>
@@ -61,11 +63,11 @@ const Viajes = () => {
       id_bus: '',
       fecha: '',
       hora_salida: '',
-      hora_llegada: '',
       precio_base_piso1: '',
       precio_base_piso2: '',
       activo: true
     })
+    setHoraLlegadaCalculada('')
     setIsModalOpen(true)
   }
 
@@ -78,11 +80,11 @@ const Viajes = () => {
       id_bus: viaje.id_bus,
       fecha: viaje.fecha,
       hora_salida: viaje.hora_salida,
-      hora_llegada: viaje.hora_llegada || '',
       precio_base_piso1: viaje.precio_base_piso1,
       precio_base_piso2: viaje.precio_base_piso2 || '',
       activo: viaje.activo
     })
+    setHoraLlegadaCalculada('')
     setIsModalOpen(true)
   }
 
@@ -95,11 +97,45 @@ const Viajes = () => {
       id_bus: '',
       fecha: '',
       hora_salida: '',
-      hora_llegada: '',
       precio_base_piso1: '',
       precio_base_piso2: '',
       activo: true
     })
+    setHoraLlegadaCalculada('')
+  }
+
+  // Calcular hora de llegada basada en hora de salida y duración de ruta
+  const calcularHoraLlegada = (idRuta, horaSalida) => {
+    if (!idRuta || !horaSalida) {
+      setHoraLlegadaCalculada('')
+      return
+    }
+
+    const rutaSeleccionada = rutas.find(r => r.id_ruta === parseInt(idRuta))
+    if (!rutaSeleccionada || !rutaSeleccionada.duracion_estimada) {
+      setHoraLlegadaCalculada('')
+      return
+    }
+
+    // Parsear duración (formato: "HH:MM:SS" o "HH:MM:SS.mmm")
+    const duracionParts = rutaSeleccionada.duracion_estimada.split(':')
+    const horas = parseInt(duracionParts[0]) || 0
+    const minutos = parseInt(duracionParts[1]) || 0
+
+    // Parsear hora de salida
+    const [horaSalidaHH, horaSalidaMM] = horaSalida.split(':')
+    
+    // Crear fecha con hora de salida
+    const fechaSalida = new Date()
+    fechaSalida.setHours(parseInt(horaSalidaHH), parseInt(horaSalidaMM), 0, 0)
+    
+    // Sumar duración
+    fechaSalida.setHours(fechaSalida.getHours() + horas)
+    fechaSalida.setMinutes(fechaSalida.getMinutes() + minutos)
+    
+    // Formatear hora de llegada
+    const horaLlegada = fechaSalida.toTimeString().slice(0, 5)
+    setHoraLlegadaCalculada(horaLlegada)
   }
 
   // Manejar cambios en el formulario
@@ -109,6 +145,13 @@ const Viajes = () => {
       ...prev,
       [name]: value
     }))
+
+    // Recalcular hora de llegada cuando cambia ruta u hora de salida
+    if (name === 'id_ruta') {
+      calcularHoraLlegada(value, formData.hora_salida)
+    } else if (name === 'hora_salida') {
+      calcularHoraLlegada(formData.id_ruta, value)
+    }
   }
 
   // Manejar envío del formulario
@@ -363,7 +406,7 @@ const Viajes = () => {
       {/* Modal Crear/Editar */}
       {isModalOpen && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-2xl">
+          <div className="modal-box max-w-2xl ">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900">
                 {modalMode === 'create' ? 'Nuevo Viaje' : 'Editar Viaje'}
@@ -417,25 +460,6 @@ const Viajes = () => {
                     </option>
                   ))}
                 </select>
-                
-                {/* Mostrar imagen del servicio cuando se selecciona un bus */}
-                {busSeleccionado && getServicioData(busSeleccionado.servicio) && (
-                  <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-2 font-medium">Servicio seleccionado:</p>
-                    <div className="flex items-center gap-3">
-                      <div className={`inline-flex items-center justify-center px-4 py-2 rounded-full ${getServicioData(busSeleccionado.servicio).badgeClass}`}>
-                        <img 
-                          src={getServicioData(busSeleccionado.servicio).imagen} 
-                          alt={getServicioData(busSeleccionado.servicio).alt}
-                          className="h-6 object-contain"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Placa: {busSeleccionado.placa}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Fecha */}
@@ -453,7 +477,7 @@ const Viajes = () => {
                 />
               </div>
 
-              {/* Horas de Salida y Llegada */}
+              {/* Hora de Salida y Llegada Calculada */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-control">
                   <label className="label">
@@ -471,20 +495,23 @@ const Viajes = () => {
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-semibold">Hora de Llegada</span>
+                    <span className="label-text font-semibold">Hora de Llegada (Estimada)</span>
                   </label>
-                  <input
-                    type="time"
-                    name="hora_llegada"
-                    value={formData.hora_llegada}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
+                  <div className="input input-bordered w-full bg-gray-50 flex items-center text-gray-600">
+                    {horaLlegadaCalculada ? (
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#f0251f]" />
+                        {horaLlegadaCalculada}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Selecciona ruta y hora de salida</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Precios por Piso */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 ${busSeleccionado?.capacidad_piso2 > 0 ? 'md:grid-cols-2' : ''} gap-4`}>
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-semibold">Precio Piso 1 (S/) *</span>
@@ -502,21 +529,25 @@ const Viajes = () => {
                   />
                 </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Precio Piso 2 (S/)</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="precio_base_piso2"
-                    value={formData.precio_base_piso2}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    className="input input-bordered w-full"
-                  />
-                </div>
+                {/* Mostrar campo de Piso 2 solo si el bus tiene segundo piso */}
+                {busSeleccionado?.capacidad_piso2 > 0 && (
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-semibold">Precio Piso 2 (S/) *</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="precio_base_piso2"
+                      value={formData.precio_base_piso2}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="input input-bordered w-full"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Estado Activo */}

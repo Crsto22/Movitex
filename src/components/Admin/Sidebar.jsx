@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   MapPin,
-  Calendar
+  Calendar,
+  FileText
 } from 'lucide-react';
 import Logo from '../../assets/Logo.png';
 import Movitex from "../../assets/Movitex.svg"
@@ -59,6 +60,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       title: 'Reservas',
       icon: Ticket,
       path: '/admin/reservas',
+    },
+    {
+      title: 'Reportes',
+      icon: FileText,
+      path: '/admin/reportes',
     }
   ];
 

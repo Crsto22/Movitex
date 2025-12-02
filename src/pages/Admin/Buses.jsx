@@ -69,7 +69,27 @@ const Buses = () => {
   // Handle form change
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    
+    // Si cambia el servicio, resetear capacidad piso 2
+    if (name === 'id_servicio') {
+      const servicioSeleccionado = servicios.find(s => s.id_servicio === parseInt(value))
+      const esMovitexOne = servicioSeleccionado?.nombre?.toLowerCase().includes('one')
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value,
+        capacidad_piso2: esMovitexOne ? '0' : prev.capacidad_piso2
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
+  }
+  
+  // Verificar si el servicio seleccionado es Movitex One
+  const esMovitexOne = () => {
+    if (!formData.id_servicio) return false
+    const servicioSeleccionado = servicios.find(s => s.id_servicio === parseInt(formData.id_servicio))
+    return servicioSeleccionado?.nombre?.toLowerCase().includes('one')
   }
 
   // Submit form
@@ -81,12 +101,20 @@ const Buses = () => {
       return
     }
 
+    // Validar que Movitex One solo tenga 1 piso
+    if (esMovitexOne()) {
+      if (formData.capacidad_piso2 && parseInt(formData.capacidad_piso2) > 0) {
+        toast.error('El servicio Movitex One solo puede tener 1 piso')
+        return
+      }
+    }
+
     // Convertir capacidades a números
     const busData = {
       id_servicio: parseInt(formData.id_servicio),
       placa: formData.placa,
       capacidad_piso1: parseInt(formData.capacidad_piso1),
-      capacidad_piso2: formData.capacidad_piso2 ? parseInt(formData.capacidad_piso2) : 0
+      capacidad_piso2: esMovitexOne() ? 0 : (formData.capacidad_piso2 ? parseInt(formData.capacidad_piso2) : 0)
     }
 
     let result
@@ -316,7 +344,7 @@ const Buses = () => {
                 {/* Capacidad Piso 2 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Capacidad Piso 2
+                    Capacidad Piso 2 {esMovitexOne() && <span className="text-xs text-gray-500">(No disponible)</span>}
                   </label>
                   <input
                     type="number"
@@ -325,8 +353,9 @@ const Buses = () => {
                     onChange={handleChange}
                     min="0"
                     max="100"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f0251f]/20 focus:border-[#f0251f]"
-                    placeholder="0"
+                    disabled={esMovitexOne()}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f0251f]/20 focus:border-[#f0251f] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder={esMovitexOne() ? "No disponible" : "0"}
                   />
                 </div>
               </div>

@@ -106,7 +106,9 @@ export const ViajesProvider = ({ children }) => {
         id_bus: bus.id_bus,
         placa: bus.placa,
         servicio: bus.servicio?.nombre || 'N/A',
-        id_servicio: bus.id_servicio
+        id_servicio: bus.id_servicio,
+        capacidad_piso1: bus.capacidad_piso1,
+        capacidad_piso2: bus.capacidad_piso2
       }))
 
       setBuses(busesFormateados)
@@ -149,6 +151,31 @@ export const ViajesProvider = ({ children }) => {
         return false
       }
 
+      // Obtener duración de la ruta para calcular hora de llegada
+      const { data: rutaData, error: rutaError } = await supabase
+        .from('rutas')
+        .select('duracion_estimada')
+        .eq('id_ruta', viajeData.id_ruta)
+        .single()
+
+      if (rutaError) throw rutaError
+
+      // Calcular hora de llegada
+      let horaLlegada = null
+      if (rutaData?.duracion_estimada && viajeData.hora_salida) {
+        const duracionParts = rutaData.duracion_estimada.split(':')
+        const horas = parseInt(duracionParts[0]) || 0
+        const minutos = parseInt(duracionParts[1]) || 0
+        
+        const [horaSalidaHH, horaSalidaMM] = viajeData.hora_salida.split(':')
+        const fechaSalida = new Date()
+        fechaSalida.setHours(parseInt(horaSalidaHH), parseInt(horaSalidaMM), 0, 0)
+        fechaSalida.setHours(fechaSalida.getHours() + horas)
+        fechaSalida.setMinutes(fechaSalida.getMinutes() + minutos)
+        
+        horaLlegada = fechaSalida.toTimeString().slice(0, 8) // HH:MM:SS
+      }
+
       const { data, error } = await supabase
         .from('viajes')
         .insert([{
@@ -156,7 +183,7 @@ export const ViajesProvider = ({ children }) => {
           id_ruta: viajeData.id_ruta,
           fecha: viajeData.fecha,
           hora_salida: viajeData.hora_salida,
-          hora_llegada: viajeData.hora_llegada || null,
+          hora_llegada: horaLlegada,
           precio_base_piso1: parseFloat(viajeData.precio_base_piso1),
           precio_base_piso2: viajeData.precio_base_piso2 ? parseFloat(viajeData.precio_base_piso2) : null,
           activo: viajeData.activo !== undefined ? viajeData.activo : true
@@ -205,6 +232,54 @@ export const ViajesProvider = ({ children }) => {
         return false
       }
 
+      // Validar que el bus no esté ocupado en la misma fecha (excluyendo el viaje actual)
+      const { data: viajesExistentes, error: errorViajesExistentes } = await supabase
+        .from('viajes')
+        .select('id_viaje, hora_salida, hora_llegada')
+        .eq('id_bus', viajeData.id_bus)
+        .eq('fecha', viajeData.fecha)
+        .neq('id_viaje', id_viaje) // Excluir el viaje actual
+
+      if (errorViajesExistentes) throw errorViajesExistentes
+
+      if (viajesExistentes && viajesExistentes.length > 0) {
+        // Obtener información del bus para el mensaje
+        const { data: busData } = await supabase
+          .from('buses')
+          .select('placa')
+          .eq('id_bus', viajeData.id_bus)
+          .single()
+
+        const placa = busData?.placa || 'este bus'
+        toast.error(`El bus ${placa} ya tiene otro viaje programado para esta fecha (${viajeData.fecha}). Por favor, elige otro bus u otra fecha.`)
+        return false
+      }
+
+      // Obtener duración de la ruta para calcular hora de llegada
+      const { data: rutaData, error: rutaError } = await supabase
+        .from('rutas')
+        .select('duracion_estimada')
+        .eq('id_ruta', viajeData.id_ruta)
+        .single()
+
+      if (rutaError) throw rutaError
+
+      // Calcular hora de llegada
+      let horaLlegada = null
+      if (rutaData?.duracion_estimada && viajeData.hora_salida) {
+        const duracionParts = rutaData.duracion_estimada.split(':')
+        const horas = parseInt(duracionParts[0]) || 0
+        const minutos = parseInt(duracionParts[1]) || 0
+        
+        const [horaSalidaHH, horaSalidaMM] = viajeData.hora_salida.split(':')
+        const fechaSalida = new Date()
+        fechaSalida.setHours(parseInt(horaSalidaHH), parseInt(horaSalidaMM), 0, 0)
+        fechaSalida.setHours(fechaSalida.getHours() + horas)
+        fechaSalida.setMinutes(fechaSalida.getMinutes() + minutos)
+        
+        horaLlegada = fechaSalida.toTimeString().slice(0, 8) // HH:MM:SS
+      }
+
       const { data, error } = await supabase
         .from('viajes')
         .update({
@@ -212,7 +287,7 @@ export const ViajesProvider = ({ children }) => {
           id_ruta: viajeData.id_ruta,
           fecha: viajeData.fecha,
           hora_salida: viajeData.hora_salida,
-          hora_llegada: viajeData.hora_llegada || null,
+          hora_llegada: horaLlegada,
           precio_base_piso1: parseFloat(viajeData.precio_base_piso1),
           precio_base_piso2: viajeData.precio_base_piso2 ? parseFloat(viajeData.precio_base_piso2) : null,
           activo: viajeData.activo !== undefined ? viajeData.activo : true

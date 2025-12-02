@@ -17,6 +17,7 @@ import { RutasProvider } from "./context/Admin/RutasContext";
 import { BusesProvider } from "./context/Admin/BusesContext";
 import { ViajesProvider as ViajesAdminProvider } from "./context/Admin/ViajesContext";
 import { ReservasAdminProvider } from "./context/Admin/ReservasContext";
+import { ReportesProvider } from "./context/Admin/ReportesContext";
 import Inicio from "./pages/Inicio";
 import MovitexOne from "./pages/MovitexOne";
 import MovitexPro from "./pages/MovitexPro";
@@ -37,6 +38,7 @@ import Buses from "./pages/Admin/Buses";
 import Rutas from "./pages/Admin/Rutas";
 import Viajes from "./pages/Admin/Viajes";
 import Reservas from "./pages/Admin/Reservas";
+import Reportes from "./pages/Admin/Reportes";
 import AdminRedirect from "./components/Admin/AdminRedirect";
 import RequireAdmin from "./components/Admin/RequireAdmin";
 function App() {
@@ -113,6 +115,11 @@ function App() {
                     <ReservasAdminProvider>
                       <Reservas />
                     </ReservasAdminProvider>
+                  } />
+                  <Route path="reportes" element={
+                    <ReportesProvider>
+                      <Reportes />
+                    </ReportesProvider>
                   } />
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 </Route>
