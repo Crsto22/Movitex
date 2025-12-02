@@ -261,7 +261,7 @@ const Footer = () => {
         <div className="md:flex md:items-center md:justify-between">
           <div className="text-center md:text-left mb-3 md:mb-0">
             <p className="text-white text-xs sm:text-sm md:text-base" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-              © 2024 Movitex. Todos los derechos reservados.
+              © 2025 Movitex. Todos los derechos reservados.
             </p>
           </div>
           <div className="text-center md:text-right">
