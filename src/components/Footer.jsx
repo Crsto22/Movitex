@@ -113,7 +113,7 @@ const Footer = () => {
               />
             </div>
             <p className="text-white text-xs sm:text-sm leading-relaxed mb-4 sm:mb-5 px-2 sm:px-0" style={{ fontFamily: 'Inter_18pt-Medium, sans-serif' }}>
-              Tu compañía de confianza para viajar por todo el Perú. 44 años brindando 
+              Tu compañía de confianza para viajar por todo el Perú. 5 años brindando 
               las mejores experiencias de viaje con seguridad y comodidad.
             </p>
             
